@@ -1,0 +1,14 @@
+{
+  "name": "kefu-workbench",
+  "version": "1.0.0",
+  "description": "客服工作台：一线建单 / 二线闭环 / 管理层看板 + 理赔计算器",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "UNLICENSED",
+  "private": true
+}

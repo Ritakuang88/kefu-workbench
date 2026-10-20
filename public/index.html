@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>客服工作台</title>
+<style>
+:root{--brand:#2563eb;--brand-l:#eff6ff;--brand-d:#1d4ed8;--ink:#1f2937;--sub:#6b7280;--line:#e5e7eb;--bg:#f3f4f6;--card:#fff;--red:#dc2626;--orange:#ea580c;--green:#16a34a;--gray-l:#f9fafb;--r:8px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;font-size:14px;color:var(--ink);background:var(--bg)}
+.hidden{display:none!important}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:13px;border:1px solid var(--line);border-radius:6px;padding:6px 9px;background:#fff;color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brand)}
+.btn{border:1px solid var(--line);background:#fff;border-radius:6px;padding:6px 14px;font-size:13px}
+.btn:hover{border-color:var(--brand);color:var(--brand)}
+.btn-primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn-primary:hover{background:var(--brand-d);color:#fff}
+.btn-sm{padding:3px 10px;font-size:12.5px}
+.btn-danger{background:var(--red);border-color:var(--red);color:#fff}
+.tag{display:inline-block;border-radius:4px;padding:1px 8px;font-size:12px;font-weight:600;white-space:nowrap}
+.tag-blue{background:#dbeafe;color:#1d4ed8}.tag-green{background:#dcfce7;color:#15803d}.tag-orange{background:#ffedd5;color:#c2410c}.tag-red{background:#fee2e2;color:#b91c1c}.tag-gray{background:#f3f4f6;color:#4b5563}
+.chip{display:inline-block;border:1px solid var(--line);border-radius:14px;padding:2px 10px;font-size:12.5px;background:#fff;cursor:pointer;margin:2px}
+.chip.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;margin-bottom:10px}
+.card h3{font-size:13.5px;margin-bottom:8px;color:var(--ink);display:flex;align-items:center;gap:6px}
+table.tbl{width:100%;border-collapse:collapse;font-size:12.5px;background:#fff}
+table.tbl th{background:var(--gray-l);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;font-weight:600}
+table.tbl td{padding:6px 8px;border-bottom:1px solid #f1f2f4;white-space:nowrap}
+table.tbl tr:hover td{background:#fafbfc}
+.mono{font-family:Consolas,monospace}
+.link{color:var(--brand);cursor:pointer;text-decoration:none}
+.link:hover{text-decoration:underline}
+/* login */
+#login{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1d4ed8,#2563eb 55%,#3b82f6)}
+.loginbox{background:#fff;border-radius:12px;padding:34px 36px;width:360px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.loginbox h1{font-size:20px;margin-bottom:4px}
+.loginbox .sub{color:var(--sub);font-size:12.5px;margin-bottom:20px}
+.loginbox input{width:100%;margin-bottom:12px;padding:9px 11px}
+.err{color:var(--red);font-size:12.5px;min-height:18px;margin-bottom:6px}
+.demo-accounts{font-size:12px;color:var(--sub);line-height:1.9;margin-top:14px;border-top:1px dashed var(--line);padding-top:10px}
+/* layout */
+#app{display:flex;min-height:100vh}
+.sidebar{width:190px;background:#111827;color:#e5e7eb;flex-shrink:0;display:flex;flex-direction:column}
+.sidebar .logo{padding:16px 16px 12px;font-weight:700;font-size:16px;border-bottom:1px solid #1f2937}
+.sidebar .logo span{color:#60a5fa}
+.nav-item{padding:11px 16px;cursor:pointer;font-size:13.5px;border-left:3px solid transparent;color:#cbd5e1}
+.nav-item:hover{background:#1f2937}
+.nav-item.on{background:#1e3a8a;border-left-color:#60a5fa;color:#fff;font-weight:600}
+.sidebar .who{margin-top:auto;padding:12px 16px;border-top:1px solid #1f2937;font-size:12px;color:#9ca3af}
+.main{flex:1;min-width:0;padding:0 0 30px}
+.view{display:none}
+.view.on{display:block}
+/* 通用页头 */
+.pagehead{background:#fff;border-bottom:1px solid var(--line);padding:10px 18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;position:sticky;top:0;z-index:20}
+.pagehead h2{font-size:16px;margin-right:8px}
+/* 一线三栏 */
+.cols{display:grid;grid-template-columns:290px 1fr 340px;gap:10px;padding:10px 12px;align-items:start}
+@media(max-width:1280px){.cols{grid-template-columns:260px 1fr 320px}}
+.kv{display:flex;justify-content:space-between;font-size:12.5px;padding:3px 0;gap:8px}
+.kv b{font-weight:600;color:var(--ink);text-align:right;word-break:break-all}
+.kv span{color:var(--sub);flex-shrink:0}
+.sec-title{font-size:12px;color:var(--sub);font-weight:600;margin:10px 0 4px;border-top:1px dashed var(--line);padding-top:8px}
+.tabs{display:flex;gap:2px;flex-wrap:wrap;margin-bottom:10px;border-bottom:2px solid var(--line)}
+.tab{padding:7px 14px;cursor:pointer;font-size:13.5px;border-radius:6px 6px 0 0;color:var(--sub)}
+.tab.on{background:#fff;color:var(--brand);font-weight:700;border:1px solid var(--line);border-bottom:2px solid #fff;margin-bottom:-2px}
+.form-grp{border:1px solid var(--line);border-radius:8px;margin-bottom:8px;background:#fff}
+.form-grp>.grp-hd{padding:8px 10px;font-weight:700;font-size:13px;background:var(--gray-l);border-radius:8px 8px 0 0;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.fld{display:flex;flex-direction:column;gap:3px;padding:5px 10px}
+.fld label{font-size:12px;color:var(--sub);font-weight:600}
+.fld label i{color:var(--red);font-style:normal}
+.fld input,.fld select,.fld textarea{width:100%}
+.fld.miss input,.fld.miss select{border-color:var(--red);background:#fff5f5}
+.sticky-foot{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--line);padding:8px 10px;display:flex;gap:8px;align-items:center;z-index:5}
+/* 分类选取器 */
+.catwrap{position:relative}
+.catpop{position:fixed;z-index:99;width:560px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 40px rgba(0,0,0,.18);display:none}
+.catpop.show{display:block}
+.catcols{display:flex;min-height:260px;border-top:1px solid var(--line)}
+.catcol{flex:1;border-right:1px solid var(--line);overflow-y:auto;max-height:330px}
+.catcol:last-child{border-right:none}
+.catitem{padding:9px 11px;font-size:13.5px;line-height:1.4;cursor:pointer}
+.catitem:hover{background:var(--brand-l)}
+.catitem.on{background:var(--brand);color:#fff;font-weight:700}
+/* 弹窗 */
+.mask{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:60;display:flex;align-items:center;justify-content:center;padding:24px}
+.modal{background:#fff;border-radius:12px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.3)}
+.modal .mhd{padding:12px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;font-weight:700}
+.modal .mbd{padding:14px 18px;overflow-y:auto}
+.modal .mft{padding:10px 18px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end}
+/* 时间线 */
+.tl{position:relative;padding-left:18px}
+.tl-item{position:relative;padding:0 0 12px}
+.tl-item::before{content:'';position:absolute;left:-13px;top:4px;width:9px;height:9px;border-radius:50%;background:var(--brand)}
+.tl-item.todo::before{background:var(--orange)}
+.tl-item .tl-hd{font-size:12.5px;font-weight:700}
+.tl-item .tl-meta{font-size:11.5px;color:var(--sub);margin:1px 0 2px}
+.tl-item .tl-bd{font-size:12.5px;background:var(--gray-l);border-radius:6px;padding:5px 8px}
+/* 统计卡 */
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;padding:12px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.stat .n{font-size:26px;font-weight:800;color:var(--brand)}
+.stat .l{font-size:12.5px;color:var(--sub);margin-top:2px}
+.stat.warn .n{color:var(--orange)}
+/* 队列卡片 */
+.qcard{background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 11px;margin-bottom:8px;cursor:pointer}
+.qcard:hover{border-color:var(--brand);box-shadow:0 2px 8px rgba(37,99,235,.12)}
+.qcard.on{border-color:var(--brand);background:var(--brand-l)}
+/* 悬浮球 */
+.fab{position:fixed;right:22px;bottom:22px;background:var(--brand);color:#fff;border-radius:24px;padding:10px 16px;font-size:13px;font-weight:700;box-shadow:0 8px 24px rgba(37,99,235,.4);cursor:pointer;z-index:50}
+.fab .sla{font-size:11px;font-weight:400;opacity:.9}
+.wpanel{position:fixed;right:22px;bottom:80px;width:620px;max-width:92vw;max-height:76vh;background:#fff;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.3);z-index:55;display:flex;flex-direction:column;overflow:hidden}
+.wpanel .mhd{padding:10px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;background:var(--brand-l)}
+.wpanel .mbd{overflow-y:auto;padding:12px 14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.mini{font-size:11.5px;color:var(--sub)}
+.alert-orange{background:#fff7ed;border:1px solid #fdba74;color:#9a3412;border-radius:8px;padding:8px 10px;font-size:12.5px}
+.alert-blue{background:var(--brand-l);border:1px solid #bfdbfe;color:var(--brand-d);border-radius:8px;padding:8px 10px;font-size:12.5px}
+.toast{position:fixed;top:18px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:9px 20px;border-radius:8px;font-size:13px;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+iframe.calcframe{width:100%;height:calc(100vh - 58px);border:none;background:#fff}
+</style>
+</head>
+<body>
+
+<!-- 登录 -->
+<div id="login">
+  <div class="loginbox">
+    <h1>📋 客服工作台</h1>
+    <div class="sub">一线建单 · 二线闭环 · 管理层看板</div>
+    <input id="li_user" placeholder="账号">
+    <input id="li_pass" type="password" placeholder="密码" onkeydown="if(event.key==='Enter')doLogin()">
+    <div class="err" id="li_err"></div>
+    <button class="btn btn-primary" style="width:100%;padding:9px" onclick="doLogin()">登 录</button>
+    <div class="demo-accounts">
+      演示账号（上线后请改密）：<br>
+      管理层 admin / Admin@2026<br>
+      一线客服 agent01 / Agent@2026<br>
+      二线工单 handler01 / Handler@2026
+    </div>
+  </div>
+</div>
+
+<!-- 应用 -->
+<div id="app" class="hidden">
+  <div class="sidebar">
+    <div class="logo">📋 客服<span>工作台</span></div>
+    <div id="nav"></div>
+    <div class="who" id="who"></div>
+  </div>
+  <div class="main">
+
+    <!-- ===== 一线工作台 ===== -->
+    <section class="view" id="view-front">
+      <div class="pagehead">
+        <h2>一线工作台</h2>
+        <select id="sType"><option>手机号</option><option>客户ID</option><option>货架编码</option><option>售后订单号</option></select>
+        <input id="sKey" placeholder="输入后回车查询，三栏同步刷新" style="flex:1;min-width:200px" onkeydown="if(event.key==='Enter')doSearch()">
+        <button class="btn btn-primary" onclick="doSearch()">搜索</button>
+        <button class="btn btn-sm" onclick="openDrawer()">🧰 工具箱</button>
+      </div>
+      <div class="cols">
+        <div><!-- 左栏 -->
+          <div class="card" id="custCard"></div>
+          <div class="card" id="tagCard"></div>
+          <div class="card" id="tipCard"></div>
+        </div>
+        <div><!-- 中栏 -->
+          <div class="tabs" id="bizTabs"></div>
+          <div id="bizBody"></div>
+        </div>
+        <div><!-- 右栏：新建工单 -->
+          <div class="card" style="padding:10px">
+            <h3>🆕 新建工单 <span id="formBadge" class="tag tag-blue" style="margin-left:auto"></span></h3>
+            <div id="ticketForm"></div>
+            <div class="sticky-foot">
+              <button class="btn btn-primary" onclick="submitTicket()">提交工单</button>
+              <button class="btn" onclick="resetTicket()">重置</button>
+              <span class="mini" id="formProg"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 二线工作台 ===== -->
+    <section class="view" id="view-second">
+      <div class="pagehead">
+        <h2>二线工作台</h2>
+        <span class="mini">受理队列 → 点选工单弹出处理窗；中栏可直接查询业务模块；右栏录入理赔闭环</span>
+        <button class="btn btn-sm" style="margin-left:auto" onclick="loadAll()">🔄 刷新</button>
+      </div>
+      <div class="cols" style="grid-template-columns:300px 1fr 340px">
+        <div>
+          <div class="card" style="padding:10px">
+            <input id="qSearch" placeholder="🔍 单号 / 客户 / 分类" style="width:100%;margin-bottom:6px" oninput="renderQueue()">
+            <div id="qChips"></div>
+          </div>
+          <div id="qList"></div>
+        </div>
+        <div>
+          <div class="alert-blue">📄 中栏为一线同款业务模块：处理工单时可直接查货架/设备/合同/结算/交易/补货/心愿单/客诉，无需切换视图（先在左栏点选工单自动带出客户）。</div>
+          <div class="tabs" id="bizTabs2" style="margin-top:8px"></div>
+          <div id="bizBody2"></div>
+        </div>
+        <div>
+          <div class="card" style="padding:10px" id="closureCard"></div>
+          <div class="card" id="custBrief"></div>
+        </div>
+      </div>
+      <div class="fab hidden" id="fab" onclick="openWin()">…</div>
+      <div class="wpanel hidden" id="wpanel"></div>
+    </section>
+
+    <!-- ===== 管理层 ===== -->
+    <section class="view" id="view-manager">
+      <div class="pagehead"><h2>管理层 · 工单看板</h2><span class="mini">只读视图，处理操作请到二线工作台</span></div>
+      <div class="statgrid" id="stats"></div>
+      <div class="card" style="margin:0 12px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+          <select id="fRange"><option value="1">今日</option><option value="7" selected>近7天</option><option value="30">近30天</option><option value="999">全部</option></select>
+          <select id="fRegion"><option value="">全部大区</option></select>
+          <select id="fStatus"><option value="">全部状态</option><option>待受理</option><option>处理中</option><option>待回访</option><option>已挂起</option><option>已完结</option></select>
+          <select id="fUrg"><option value="">全部紧急度</option><option>一般</option><option>紧急</option><option>非常紧急</option></select>
+          <input id="fKey" placeholder="单号 / 客户 / 分类" onkeydown="if(event.key==='Enter')renderMgrTable()">
+          <button class="btn btn-primary btn-sm" onclick="renderMgrTable()">查询</button>
+          <button class="btn btn-sm" onclick="fRange.value='999';fRegion.value='';fStatus.value='';fUrg.value='';fKey.value='';renderMgrTable()">重置</button>
+          <span class="mini" id="mgrCount"></span>
+        </div>
+        <div style="overflow-x:auto" id="mgrTable"></div>
+      </div>
+    </section>
+
+    <!-- ===== 理赔计算器 ===== -->
+    <section class="view" id="view-calc">
+      <iframe class="calcframe" src="/calculator.html" id="calcFrame"></iframe>
+    </section>
+
+    <!-- ===== 用户管理 ===== -->
+    <section class="view" id="view-users">
+      <div class="pagehead"><h2>用户管理</h2><button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="renderUsers()">刷新</button></div>
+      <div class="card" style="margin:12px"><div style="overflow-x:auto" id="userTable"></div></div>
+    </section>
+
+    <!-- ===== 数据浏览 ===== -->
+    <section class="view" id="view-data">
+      <div class="pagehead"><h2>数据浏览器</h2><span class="mini">各业务表最近 50 条</span><button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="renderDataBrowser()">刷新</button></div>
+      <div style="padding:12px" id="dataBrowser"></div>
+    </section>
+
+  </div>
+</div>
+
+<div id="maskRoot"></div>
+
+<script>
+'use strict';
+/* ===== 基础 ===== */
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function toast(msg){var t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(function(){t.remove();},2200);}
+async function api(path,opt){
+  const r=await fetch(path,Object.assign({credentials:'same-origin',headers:{'Content-Type':'application/json'}},opt||{}));
+  const j=await r.json().catch(()=>({ok:false,error:'响应异常'}));
+  if(r.status===401){showLogin();throw new Error('请先登录');}
+  if(!j.ok)throw new Error(j.error||('HTTP '+r.status));
+  return j.data;
+}
+const post=(p,b)=>api(p,{method:'POST',body:JSON.stringify(b||{})});
+const patch=(p,b)=>api(p,{method:'PATCH',body:JSON.stringify(b||{})});
+
+/* ===== 全局状态 ===== */
+var S={me:null,views:[],customers:[],cats:[],catTree:{},cur:null,tickets:[],events:[],closures:[],shelves:[],devices:[],contracts:[],settlements:[],trades:[],reps:[],wishes:[],curTicket:null,qFilter:'全部',bizTab:'货架',bizTab2:'货架'};
+var VIEWS_META={front:'☎️ 一线工作台',second:'🧾 二线工单',manager:'📊 管理层',calc:'🧮 理赔计算器',users:'👥 用户管理',data:'🗂 数据浏览'};
+
+/* ===== 登录/导航 ===== */
+function showLogin(){$('login').classList.remove('hidden');$('app').classList.add('hidden');}
+async function doLogin(){
+  try{
+    await post('/auth/login',{username:$('li_user').value.trim(),password:$('li_pass').value});
+    await boot();
+  }catch(e){$('li_err').textContent=e.message;}
+}
+async function boot(){
+  const me=await api('/api/me');
+  S.me=me.user;S.views=me.allowed_views;
+  $('login').classList.add('hidden');$('app').classList.remove('hidden');
+  $('who').innerHTML=esc(S.me.name)+'<br><span style="opacity:.7">'+esc(S.me.role)+'</span> · <a href="#" style="color:#93c5fd" onclick="logout();return false">退出</a>';
+  var nav=$('nav');nav.innerHTML='';
+  var order=['front','second','manager','calc','users','data'];
+  order.forEach(function(v){
+    if(!S.views.includes(v))return;
+    var d=document.createElement('div');d.className='nav-item';d.textContent=VIEWS_META[v];d.id='nav-'+v;
+    d.onclick=function(){switchView(v);};nav.appendChild(d);
+  });
+  await loadAll();
+  switchView(S.views[0]||'front');
+}
+async function logout(){try{await post('/auth/logout');}catch(e){}showLogin();}
+function switchView(v){
+  document.querySelectorAll('.view').forEach(function(x){x.classList.remove('on');});
+  var el=$('view-'+v);if(el)el.classList.add('on');
+  document.querySelectorAll('.nav-item').forEach(function(x){x.classList.remove('on');});
+  var n=$('nav-'+v);if(n)n.classList.add('on');
+}
+
+/* ===== 数据加载 ===== */
+async function loadAll(){
+  const jobs=[api('/api/customers'),api('/api/categories'),api('/api/tickets'),api('/api/ticket_events'),api('/api/closures'),api('/api/shelves'),api('/api/devices'),api('/api/contracts'),api('/api/settlements'),api('/api/trades'),api('/api/replenishments'),api('/api/wishes')];
+  const r=await Promise.all(jobs.map(function(j){return j.catch(function(){return [];});}));
+  S.customers=r[0];S.cats=r[1];S.tickets=r[2];S.events=r[3];S.closures=r[4];S.shelves=r[5];S.devices=r[6];S.contracts=r[7];S.settlements=r[8];S.trades=r[9];S.reps=r[10];S.wishes=r[11];
+  buildCatTree();
+  var regions=[...new Set(S.tickets.map(function(t){return t.region;}))].filter(Boolean);
+  $('fRegion').innerHTML='<option value="">全部大区</option>'+regions.map(function(x){return '<option>'+esc(x)+'</option>';}).join('');
+  if($('view-front').classList.contains('on')||S.views.includes('front'))renderFront();
+  if(S.views.includes('second')){renderQueue();renderClosureForm();renderCustBrief();renderBiz('bizTabs2','bizBody2','bizTab2');}
+  if(S.views.includes('manager')){renderStats();renderMgrTable();}
+}
+async function reloadTickets(){
+  S.tickets=await api('/api/tickets');S.events=await api('/api/ticket_events');S.closures=await api('/api/closures');
+  if(S.curTicket){var f=S.tickets.find(function(t){return t.id===S.curTicket.id;});if(f){S.curTicket=f;if(!$('wpanel').classList.contains('hidden'))renderWin();}}
+  renderQueue();renderStats();renderMgrTable();renderFront();
+}
+
+/* ===== 分类树 ===== */
+function buildCatTree(){
+  S.catTree={};
+  S.cats.forEach(function(c){
+    var p=String(c.path||'').split(' > ');
+    if(p.length<3)return;
+    (S.catTree[p[0]]=S.catTree[p[0]]||{});
+    (S.catTree[p[0]][p[1]]=S.catTree[p[0]][p[1]]||[]).push({leaf:p[2],code:c.code,hot:c.hot,path:c.path});
+  });
+}
+
+/* ===== 一线：搜索与左栏 ===== */
+function doSearch(){
+  var type=$('sType').value, key=$('sKey').value.trim();
+  if(!key){toast('请输入查询内容');return;}
+  var hit=null;
+  if(type==='手机号')hit=S.customers.find(function(c){return String(c.phone||'').indexOf(key)>=0;});
+  else if(type==='客户ID')hit=S.customers.find(function(c){return String(c.id)===key;});
+  else if(type==='货架编码'){
+    var sh=S.shelves.find(function(s){return String(s.code).toUpperCase()===key.toUpperCase();});
+    if(sh)hit=S.customers.find(function(c){return c.id===sh.customer_id;});
+  }else{
+    var tr=S.trades.find(function(t){return String(t.order_no).indexOf(key)>=0;});
+    if(tr)hit=S.customers.find(function(c){return c.id===tr.customer_id;});
+  }
+  if(!hit){toast('未找到客户，演示数据可试：13812345678 / 客户ID 1 / A359808');renderFront();return;}
+  S.cur=hit;renderFront();toast('已定位客户：'+hit.name);
+}
+function tagsOf(c){try{return JSON.parse(c.tags||'[]');}catch(e){return [];}}
+var CAND_TAGS=['重点维护','易投诉客户','账期敏感','愿意转对公','需本周回访'];
+function renderFront(){
+  var c=S.cur;
+  /* 左栏 */
+  if(!c){
+    $('custCard').innerHTML='<h3>👤 客户 360</h3><div class="mini" style="padding:20px 0;text-align:center">先在顶部搜索客户<br>（手机号 / 客户ID / 货架编码 / 售后订单号）</div>';
+    $('tagCard').innerHTML='';$('tipCard').innerHTML='';
+  }else{
+    var tags=tagsOf(c);
+    $('custCard').innerHTML='<h3>👤 客户 360</h3>'+
+      '<div style="font-weight:700;font-size:15px;margin-bottom:2px">'+esc(c.name)+'</div>'+
+      '<div style="margin-bottom:6px"><span class="tag tag-blue">'+esc(c.level)+'</span> <span class="tag tag-green">核心KP：'+esc(c.kp)+'</span> '+(c.wecom?'<span class="tag tag-gray">企微已添加</span>':'<span class="tag tag-orange">企微未添加</span>')+'</div>'+
+      kv('客户ID',c.id+' <span class="link" onclick="copyTxt(\''+c.id+'\')">复制</span>')+kv('大区/地区',c.region)+kv('客户身份',c.identity)+(c.welfare?kv('企业福利员工','是'):'')+
+      '<div class="sec-title">展开更多信息 ▾</div>'+kv('货柜激活时间',c.activated_at)+kv('是否黑名单',c.blacklist?'是':'否')+kv('历史临期/过期投诉',c.after_sales_90d+' 次')+kv('是否优质用户',c.quality?'是':'否')+
+      '<div class="sec-title">消费信息（近90天）</div>'+kv('交易订单号',c.orders_90d+' 笔')+kv('累计消费',c.spend_90d!=null?('¥'+Number(c.spend_90d).toFixed(2)):'—')+
+      (c.after_sales_90d?kv('售后订单',c.after_sales_90d+' 笔'):kv('售后订单','无记录'));
+    $('tagCard').innerHTML='<h3>🏷 客户标签</h3><div id="tagChips">'+(tags.length?tags.map(function(t){return '<span class="chip on">'+esc(t)+' <span onclick="rmTag(\''+esc(t)+'\')" style="margin-left:4px">✕</span></span>';}).join(''):'<span class="mini">暂无标签</span>')+'</div>'+
+      '<div style="margin-top:6px">'+CAND_TAGS.filter(function(t){return !tags.includes(t);}).map(function(t){return '<span class="chip" onclick="addTag(\''+esc(t)+'\')">＋ '+esc(t)+'</span>';}).join('')+'</div>';
+    var off=S.shelves.filter(function(s){return s.customer_id===c.id&&!s.online;});
+    $('tipCard').innerHTML=off.length?'<h3>💡 智能提示</h3><div class="alert-orange">'+off.length+' 台货架离线，建议优先核查 <b class="mono">'+esc(off[0].code)+'</b></div>':'';
+  }
+  renderTicketForm();renderBiz();
+}
+function kv(k,v){return '<div class="kv"><span>'+esc(k)+'</span><b>'+ (v==null||v===''?'—':v) +'</b></div>';}
+function copyTxt(t){navigator.clipboard&&navigator.clipboard.writeText(String(t));toast('已复制');}
+async function addTag(t){if(!S.cur)return;var tags=tagsOf(S.cur);tags.push(t);S.cur.tags=JSON.stringify(tags);await patch('/api/customers/'+S.cur.id,{tags:S.cur.tags});renderFront();toast('已打标：'+t);}
+async function rmTag(t){if(!S.cur)return;var tags=tagsOf(S.cur).filter(function(x){return x!==t;});S.cur.tags=JSON.stringify(tags);await patch('/api/customers/'+S.cur.id,{tags:S.cur.tags});renderFront();toast('已移除：'+t);}
+
+/* ===== 一线：中栏 8 模块 ===== */
+var BIZ_TABS=['货架','补货','设备','合同','结算','交易','心愿单','客诉记录'];
+function renderBiz(tabsId,bodyId,tabKey){
+  var el=$(tabsId||'bizTabs'),bd=$(bodyId||'bizBody'),key=tabKey||'bizTab';
+  if(!el)return;
+  el.innerHTML=BIZ_TABS.map(function(t){return '<div class="tab'+(S[key]===t?' on':'')+'" onclick="S.'+key+'=\''+t+'\';renderBiz()">'+t+'</div>';}).join('');
+  if(!S.cur){bd.innerHTML='<div class="card"><div class="mini" style="padding:30px 0;text-align:center">搜索客户后展示「'+S[key]+'」模块数据</div></div>';return;}
+  var cid=S.cur.id;
+  bd.innerHTML='';
+  var wrap=document.createElement('div');bd.appendChild(wrap);
+  if(S[key]==='货架')renderShelves(wrap,cid);
+  else if(S[key]==='设备')renderDevices(wrap,cid);
+  else if(S[key]==='合同')renderContracts(wrap,cid);
+  else if(S[key]==='结算')renderSettle(wrap,cid);
+  else if(S[key]==='交易')renderTrades(wrap,cid);
+  else if(S[key]==='补货')renderRep(wrap,cid);
+  else if(S[key]==='心愿单')renderWish(wrap,cid);
+  else renderComplaints(wrap,cid);
+}
+function tbl(cols,rows,opts){
+  opts=opts||{};
+  return '<div style="overflow-x:auto;background:#fff;border:1px solid var(--line);border-radius:8px"><table class="tbl"><thead><tr>'+cols.map(function(c){return '<th>'+esc(c)+'</th>';}).join('')+'</tr></thead><tbody>'+
+    (rows.length?rows.map(function(r){return '<tr>'+r.map(function(cell){return '<td>'+cell+'</td>';}).join('')+'</tr>';}).join(''):'<tr><td colspan="'+cols.length+'" style="text-align:center;color:var(--sub);padding:24px">— 无记录 —</td></tr>')+
+    '</tbody></table></div>';
+}
+var dot=function(on){return on?'<span style="color:var(--green)">● 在线</span>':'<span style="color:var(--sub)">● 离线</span>';};
+function renderShelves(el,cid){
+  var rows=S.shelves.filter(function(s){return s.customer_id===cid;}).map(function(s){
+    return [mono(s.code),mono(s.shelf_id),esc(s.name),tag(s.grade,'blue'),tag(s.level,'gray'),esc(s.status),dot(s.online),
+      s.swap?'<span class="link" onclick="toast(\'换架工单 '+esc(s.swap_no||'')+'（演示）\')">是 · 查看详情</span>':'否',
+      esc(s.owner_name),esc(s.owner_phone||'')+' <span class="link" onclick="toast(\'外呼 '+esc(s.owner_phone||'')+'（演示）\')">📞</span>',
+      '<span class="link" onclick="fillShelf(\''+esc(s.shelf_id)+'\',\''+esc(s.code)+'\')">详情</span> <span class="link" onclick="copyTxt(\''+esc(s.code)+'\')">复制</span>'];
+  });
+  el.innerHTML='<div class="card" style="padding:10px">'+tbl(['货架编码','货架ID','货架名称','等级','客户等级','状态','在线','换架流程','店主','店主电话','操作'],rows)+'</div>';
+}
+function renderDevices(el,cid){
+  var rows=S.devices.filter(function(s){return s.customer_id===cid;}).map(function(s){
+    return [mono(s.code),mono(s.point_id),esc(s.point_name),dot(s.online),s.offline_7d+' 次',s.offline_30d+' 次',s.avg_offline_min+' 分钟',
+      s.repair_no?('<span class="link" onclick="toast(\'跳转维修系统 '+esc(s.repair_no)+'（演示）\')">是 · '+esc(s.repair_no)+'</span>'):'否',
+      s.withdraw?'是':'否',s.returned?'是':'否'];
+  });
+  el.innerHTML='<div class="card" style="padding:10px">'+tbl(['货架编码','点位ID','点位名称','在线情况','7天内断网','30天断网','平均断网时长','维修任务','撤架任务','线下回仓'],rows)+'</div>';
+}
+function renderContracts(el,cid){
+  var cur=S.contracts.find(function(c){return c.customer_id===cid&&c.is_current;});
+  var hist=S.contracts.filter(function(c){return c.customer_id===cid&&!c.is_current;});
+  var sealTag={'已签章':'green','待签章':'orange','已到期':'gray'};
+  var html='';
+  if(cur){
+    html+='<div class="card"><h3>📄 当前合同</h3><div class="grid2">'+
+      kv('合同名称',esc(cur.name))+kv('合同编号',mono(cur.contract_no))+
+      kv('签章状态','<span class="tag tag-'+(sealTag[cur.seal_status]||'gray')+'">'+esc(cur.seal_status)+'</span>')+kv('签约主体',esc(cur.party))+
+      kv('签署方式',esc(cur.sign_type))+kv('签章完成时间',esc(cur.sealed_at))+
+      kv('合同期限','至 '+esc(cur.term_end))+kv('剩余有效期',(cur.days_left>0&&cur.days_left<30?'<span class="tag tag-orange">'+cur.days_left+' 天（临期）</span>':cur.days_left+' 天'))+
+      kv('覆盖点位',cur.points+' 个')+'</div>'+
+      '<div style="margin-top:8px;display:flex;gap:8px"><button class="btn btn-sm btn-primary" onclick="toast(\'下载带签章 PDF（演示）\')">⬇ 下载合同</button><button class="btn btn-sm" onclick="toast(\'签章详情（演示）\')">查看签章详情</button></div></div>';
+  }else html+='<div class="card"><div class="mini">暂无合同记录</div></div>';
+  html+='<div class="card"><h3>历史合同</h3>'+tbl(['编号','名称','期限','状态','操作'],hist.map(function(c){return [mono(c.contract_no),esc(c.name),'至 '+esc(c.term_end),tag(c.seal_status,sealTag[c.seal_status]||'gray'),'<span class="link" onclick="toast(\'下载（演示）\')">下载</span>'];}))+'</div>';
+  el.innerHTML=html;
+}
+function renderSettle(el,cid){
+  var rows=S.settlements.filter(function(s){return s.customer_id===cid;});
+  var total=rows.reduce(function(s,x){return s+Number(x.amount||0);},0);
+  var oldest=rows.filter(function(x){return x.status==='未结算';}).map(function(x){return x.oldest_period;}).sort()[0];
+  el.innerHTML='<div class="card"><div class="alert-orange" style="font-size:13.5px"><b style="font-size:20px">¥'+total.toFixed(2)+'</b> 待结算总额 · 覆盖 '+rows.length+' 个点位'+(oldest?' · 最早未结账期 '+oldest:'')+'<div style="margin-top:6px;display:flex;gap:8px"><button class="btn btn-sm" onclick="toast(\'跳转结算台账（演示）\')">跳转结算台账</button><button class="btn btn-sm" onclick="switchView(\'calc\')">🧮 税费/理赔测算</button></div></div></div>'+
+  '<div class="card" style="padding:10px">'+tbl(['点位ID','货架编码','点位名称','供应商编码','待结算金额','最早未结账期','结算状态','操作'],rows.map(function(s){return [mono(s.point_id),mono(s.code),esc(s.point_name),mono(s.supplier_code),'¥'+Number(s.amount).toFixed(2),esc(s.oldest_period),tag(s.status,s.status==='结算中'?'blue':'orange'),'<span class="link" onclick="toast(\'去结算（演示）\')">去结算</span>'];}))+'<div class="mini" style="margin-top:6px">口径：点位销售分成 − 已结算金额，每日 02:00 自结算系统同步（演示数据）</div></div>';
+}
+function renderTrades(el,cid){
+  var rows=S.trades.filter(function(t){return t.customer_id===cid;}).map(function(t){
+    return [mono(t.order_no),mono(t.trade_no),mono(t.merchant_no),mono(t.code),mono(t.shelf_id),esc(t.phone),'¥'+Number(t.amount).toFixed(2),esc(t.status),esc(t.source),esc(t.pay_type),
+      t.refunds>0?'<span class="link" onclick="toast(\'查看退款 '+t.refunds+' 笔（演示）\')">查看退款('+t.refunds+')</span>':'无退款',esc(t.open_time),esc(t.created_time),
+      '<span class="link" onclick="toast(\'订单详情（演示）\')">查看</span>'];
+  });
+  el.innerHTML='<div class="card" style="padding:10px">'+tbl(['订单编号','交易号','商户订单号','货架编码','货架ID','用户手机','金额','状态','来源','支付','退款记录','开门时间','创建时间','操作'],rows)+'</div>';
+}
+function renderRep(el,cid){
+  var shelves=S.shelves.filter(function(s){return s.customer_id===cid;});
+  var reps=S.reps.filter(function(r){return r.customer_id===cid;});
+  var cards=[['近30天补货频次',reps.length+' 次','含在途 '+reps.filter(function(r){return r.status==='配送中';}).length+' 单'],
+    ['近7天催补货','2 次','A359812（演示）'],['缺货 SKU','5 个','最严重：A359812'],['当前总库存','126 件','全部点位合计']];
+  el.innerHTML='<div class="card" style="padding:10px"><div class="mini" style="margin-bottom:6px">点位筛选：<input placeholder="货架编码/点位名称" style="width:220px"> <span class="mini">已选 '+shelves.length+' 个点位</span> <button class="btn btn-primary btn-sm">批量提交补货需求</button></div>'+
+    '<div class="grid4" style="margin-bottom:10px">'+cards.map(function(c){return '<div style="border:1px solid var(--line);border-radius:8px;padding:8px 10px"><div style="font-size:11.5px;color:var(--sub)">'+c[0]+'</div><div style="font-size:19px;font-weight:800;color:var(--brand)">'+c[1]+'</div><div class="mini">'+c[2]+'</div></div>';}).join('')+'</div>'+
+    '<div class="mini" style="margin-bottom:6px">点位：'+shelves.map(function(s){return '<span class="chip on">'+esc(s.code)+'</span>';}).join('')+'</div></div>'+
+    '<div class="card" style="padding:10px"><h3>近期补货记录</h3>'+tbl(['补货单号','货架编码','点位','上架时间','金额','SKU数','状态'],reps.map(function(r){return [mono(r.replenish_no),mono(r.code),esc(r.point_name),esc(r.on_shelf_time)||'—','¥'+Number(r.amount).toFixed(2),r.sku_count,tag(r.status,r.status==='已上架'?'green':'blue')];}))+'</div>';
+}
+function renderWish(el,cid){
+  el.innerHTML='<div class="card" style="padding:10px"><div class="alert-orange">⚠ 搜索结果如不带 FE 码则不是在售品，提报即为提报新品</div>'+
+    '<div id="wishRows" style="margin-top:8px"></div>'+
+    '<div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-sm" onclick="addWishRow()">＋ 添加一行数据</button><button class="btn btn-primary btn-sm" onclick="submitWishes()">整单提交</button></div></div>'+
+    '<div class="card" style="padding:10px"><h3>已提报心愿单</h3>'+tbl(['货架编码','商品名称','FE码','类型','数量','周期','反馈人'],S.wishes.filter(function(w){return w.customer_id===cid;}).map(function(w){return [mono(w.code),esc(w.product),w.fe_code?mono(w.fe_code):'<span class="tag tag-orange">新品提报</span>',esc(w.wish_type),w.qty,w.period+' 天',esc(w.reporter)];}))+'</div>';
+  renderWishRows();
+}
+var wishData=[];
+function renderWishRows(){
+  var el=$('wishRows');if(!el)return;
+  if(!wishData.length)wishData=[{}];
+  var shelves=S.cur?S.shelves.filter(function(s){return s.customer_id===S.cur.id;}):[];
+  el.innerHTML=tbl(['编号','货架编码*','商品名称*','反馈人*','手机号*','心愿类型*','数量*','周期*','操作'],wishData.map(function(w,i){
+    return [String(i+1),
+      '<select data-wi="'+i+'" data-wf="code">'+shelves.map(function(s){return '<option'+(w.code===s.code?' selected':'')+'>'+esc(s.code)+'</option>';}).join('')+'</select>',
+      '<input data-wi="'+i+'" data-wf="product" value="'+esc(w.product||'')+'" placeholder="输入商品名称失焦搜索" onblur="wishSearch('+i+',this.value)">',
+      '<input data-wi="'+i+'" data-wf="reporter" value="'+esc(w.reporter||(S.cur?S.cur.name:''))+'">',
+      '<input data-wi="'+i+'" data-wf="reporter_phone" value="'+esc(w.reporter_phone||(S.cur?S.cur.phone:''))+'">',
+      '<select data-wi="'+i+'" data-wf="wish_type">'+['新品提报','在售补货','规格变更','恢复销售'].map(function(t){return '<option'+(w.wish_type===t?' selected':'')+'>'+t+'</option>';}).join('')+'</select>',
+      '<input data-wi="'+i+'" data-wf="qty" value="'+(w.qty||'')+'" style="width:60px">',
+      '<select data-wi="'+i+'" data-wf="period">'+[30,60,90].map(function(p){return '<option'+(Number(w.period)===p?' selected':'')+'>'+p+'</option>';}).join('')+'</select>',
+      '<span class="link" onclick="wishData.push(JSON.parse(JSON.stringify(wishData['+i+'])));renderWishRows()">复制</span>'];
+  }));
+  el.querySelectorAll('[data-wi]').forEach(function(inp){
+    inp.oninput=function(){wishData[+inp.getAttribute('data-wi')][inp.getAttribute('data-wf')]=inp.value;};
+    inp.onchange=inp.oninput;
+  });
+}
+function addWishRow(){wishData.push({});renderWishRows();}
+var WISH_DB={'元气森林白桃味汽水 480ml':{brand:'元气森林',fe_code:'FEH0075',in_list:true,supply_status:'在售',report_count:3},'农夫山泉东方树叶 500ml':{brand:'农夫山泉',fe_code:'FEH0102',in_list:true,supply_status:'在售',report_count:1}};
+function wishSearch(i,v){
+  v=(v||'').trim();if(!v)return;
+  var hit=WISH_DB[v];
+  if(hit){Object.assign(wishData[i],hit);toast('命中在售品：FE码 '+hit.fe_code);}
+  else{wishData[i].fe_code=null;wishData[i].in_list=false;wishData[i].brand='-';wishData[i].wish_type='新品提报';toast('未命中在售品 → 标记为新品提报');}
+  renderWishRows();
+}
+async function submitWishes(){
+  if(!S.cur){toast('请先搜索客户');return;}
+  var bad=wishData.filter(function(w){return !w.product||!w.qty;}).length;
+  if(bad){toast('有 '+bad+' 行缺少商品名称或数量');return;}
+  for(var i=0;i<wishData.length;i++){
+    var w=wishData[i];
+    await post('/api/wishes',{customer_id:S.cur.id,code:w.code,product:w.product,brand:w.brand||'-',fe_code:w.fe_code||null,in_list:!!w.in_list,supply_status:w.supply_status||'-',report_count:w.report_count||0,reporter:w.reporter||S.cur.name,reporter_phone:w.reporter_phone||S.cur.phone,wish_type:w.wish_type||'新品提报',qty:+w.qty||1,period:+w.period||30});
+  }
+  toast('心愿单已提交（'+wishData.length+' 行）');wishData=[{}];S.wishes=await api('/api/wishes');renderBiz();
+}
+function renderComplaints(el,cid){
+  var rows=S.tickets.filter(function(t){return t.customer_id===cid;}).map(function(t){
+    return [monoLink(t.ticket_no,'openTicketDetail('+t.id+')'),esc(t.risk),esc(t.channel),esc(t.cat_path),tag(t.risk,t.risk==='投诉'?'red':t.risk==='舆情风险'?'orange':'blue'),statusTag(t.status),esc(t.created_at),esc(t.handler||'待分配'),
+      (t.channel==='热线来单'?'<span class="link" onclick="toast(\'播放录音（演示）\')">🎧 录音</span> ':'')+'<span class="link" onclick="openTicketDetail('+t.id+')">详情</span> <span class="link" onclick="openUrge('+t.id+')">催办</span>'];
+  });
+  el.innerHTML='<div class="card" style="padding:10px">'+tbl(['客诉单号','类型','来单渠道','工单分类','风险','状态','创建时间','处理人','操作'],rows)+'</div>';
+}
+function monoLink(txt,fn){return '<span class="link mono" onclick="'+fn+'">'+esc(txt)+'</span>';}
+function tag(txt,color){return '<span class="tag tag-'+color+'">'+esc(txt)+'</span>';}
+function statusTag(st){var m={'待受理':'red','待处理':'red','处理中':'blue','待回访':'orange','已挂起':'gray','已完结':'gray'};return tag(st,m[st]||'gray');}
+
+/* ===== 客诉详情 / 催办 ===== */
+function modal(html,width){
+  var m=document.createElement('div');m.className='mask';
+  m.innerHTML='<div class="modal" style="width:'+(width||640)+'px"><div class="mbd">'+html+'</div></div>';
+  m.onclick=function(e){if(e.target===m)m.remove();};
+  $('maskRoot').appendChild(m);return m;
+}
+function timelineOf(tid){
+  var evs=S.events.filter(function(e){return e.ticket_id===tid;});
+  return '<div class="tl">'+(evs.length?evs.map(function(e){return '<div class="tl-item'+(/催办/.test(e.action)?' todo':'')+'"><div class="tl-hd">'+esc(e.actor)+' · '+esc(e.action)+'</div><div class="tl-meta">'+esc(e.created_at)+'</div><div class="tl-bd">'+esc(e.detail||'')+'</div></div>';}).join(''):'<div class="mini">暂无跟进记录</div>')+'</div>';
+}
+function openTicketDetail(tid){
+  var t=S.tickets.find(function(x){return x.id===tid;});if(!t)return;
+  var cl=S.closures.find(function(c){return c.ticket_id===tid;});
+  var html='<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px"><b class="mono" style="font-size:15px">'+esc(t.ticket_no)+'</b>'+statusTag(t.status)+tag(t.risk,t.risk==='投诉'?'red':'orange')+'</div>'+
+    '<div class="grid4" style="margin-bottom:10px">'+kv('类型',esc(t.risk))+kv('工单分类',esc(t.cat_path))+kv('关联货架',esc(t.shelf_code))+kv('处理人',esc(t.handler||'待分配'))+kv('创建时间',esc(t.created_at))+kv('紧急程度',esc(t.urgency))+'</div>'+
+    '<div class="alert-orange" style="margin-bottom:10px"><b>客户诉求：</b>'+esc(t.demand||'—')+'</div>'+
+    (cl?'<div class="card" style="margin-bottom:10px"><h3>理赔闭环记录</h3>'+closureView(cl)+'</div>':'')+
+    '<h3 style="font-size:13px;margin-bottom:6px">跟进记录时间线</h3>'+timelineOf(tid)+
+    '<div style="margin-top:10px;text-align:right"><button class="btn btn-primary btn-sm" onclick="openUrge('+tid+')">⚡ 发起催办</button></div>';
+  modal(html,680);
+}
+function openUrge(tid){
+  var t=S.tickets.find(function(x){return x.id===tid;});
+  var m=modal('<h3 style="margin-bottom:8px">⚡ 发起催办 · '+esc(t.ticket_no)+'</h3>'+
+    '<div class="fld"><label>催办对象</label><select id="ug_to"><option>当前处理人（'+esc(t.handler||'待分配')+'）</option><option>处理人上级主管</option><option>值班主管</option></select></div>'+
+    '<div class="fld"><label><i>*</i> 催办内容</label><textarea id="ug_txt" rows="3"></textarea></div>'+
+    '<div style="margin:6px 0">快捷：'+['客户二次来电催促','今日18:00前反馈','临近承诺时限'].map(function(s){return '<span class="chip" onclick="document.getElementById(\'ug_txt\').value=\''+s+'\'">'+s+'</span>';}).join('')+'</div>'+
+    '<div style="text-align:right"><button class="btn btn-primary btn-sm" id="ug_ok">确认催办</button></div>',480);
+  m.querySelector('#ug_ok').onclick=async function(){
+    var txt=m.querySelector('#ug_txt').value.trim();
+    if(!txt){toast('催办内容必填');return;}
+    await post('/api/ticket_events',{ticket_id:tid,actor:S.me.name,action:'催办 → '+m.querySelector('#ug_to').value.split('（')[0],detail:txt});
+    m.remove();await reloadTickets();toast('催办成功，已写入时间线');
+  };
+}
+
+/* ===== 一线：右栏建单表单 ===== */
+var FORM=[
+  {g:'① 基础信息',fields:[
+    {k:'channel',l:'来单渠道',ro:1,v:'自助创建'},
+    {k:'biz_type',l:'业务类型',type:'select',opts:['B端','C端'],req:1},
+    {k:'customer_name',l:'客户名称',ro:1},
+    {k:'region',l:'大区/地区',ro:1},
+    {k:'level',l:'客户等级',ro:1},
+    {k:'phone',l:'联系人手机号',ro:1},
+  ]},
+  {g:'② 问题定位',fields:[
+    {k:'cat_path',l:'工单分类',type:'cat',req:1},
+    {k:'shelf_id',l:'货架ID',req:1},
+    {k:'shelf_code',l:'货架编码',req:1},
+    {k:'risk',l:'风险标识',type:'select',opts:['咨询','投诉','舆情风险','监管风险'],req:1},
+    {k:'urgency',l:'紧急程度',type:'select',opts:['一般','紧急','非常紧急'],req:1},
+    {k:'escalate',l:'是否升级',type:'select',opts:[['否',false],['是',true]],req:1},
+  ]},
+  {g:'③ 处理内容',fields:[
+    {k:'role',l:'反馈角色',type:'select',opts:['其他','店主','顾客','企业对接人']},
+    {k:'demand',l:'客户诉求',type:'textarea',ph:'将同步给客户，200字限'},
+    {k:'content',l:'工单内容',type:'textarea',ph:'内部处理记录，500字限',req:1},
+  ]},
+];
+var formVal={};
+function renderTicketForm(){
+  var c=S.cur;
+  formVal=Object.assign({channel:'自助创建',biz_type:'B端',customer_name:c?c.name:'',region:c?c.region:'',level:c?c.level:'',phone:c?c.phone:'',risk:'咨询',urgency:'一般',escalate:'否',role:'其他'},formVal);
+  if(c){formVal.customer_name=c.name;formVal.region=c.region;formVal.level=c.level;formVal.phone=c.phone;}
+  var html=FORM.map(function(grp){
+    return '<div class="form-grp" id="grp-'+grp.g.charAt(0)+'"><div class="grp-hd" onclick="this.parentNode.classList.toggle(\'closed\')"><span>'+esc(grp.g)+'</span><span class="grp-badge"></span></div><div class="grp-bd">'+
+      grp.fields.map(function(f){return fldHtml(f);}).join('')+'</div></div>';
+  }).join('');
+  $('ticketForm').innerHTML=html;
+  updateFormProg();
+}
+function fldHtml(f){
+  var v=formVal[f.k]==null?'':formVal[f.k];
+  var inner;
+  if(f.type==='select')inner='<select id="ff_'+f.k+'" '+(f.ro?'disabled':'')+' onchange="formVal.'+f.k+'=this.value;updateFormProg()">'+f.opts.map(function(o){var val=Array.isArray(o)?o[1]:o,lbl=Array.isArray(o)?o[0]:o;return '<option value="'+esc(val)+'"'+(String(v)===String(val)?' selected':'')+'>'+esc(lbl)+'</option>';}).join('')+'</select>';
+  else if(f.type==='textarea')inner='<textarea id="ff_'+f.k+'" rows="2" oninput="formVal.'+f.k+'=this.value;updateFormProg()" placeholder="'+esc(f.ph||'')+'">'+esc(v)+'</textarea>';
+  else if(f.type==='cat')inner='<div class="catwrap"><input id="ff_cat" readonly placeholder="点击选取（级联+搜索）" onclick="openCatPop()" value="'+esc(v)+'"></div>';
+  else inner='<input id="ff_'+f.k+'" '+(f.ro?'readonly style="background:var(--gray-l)"':'')+' value="'+esc(v)+'" oninput="formVal.'+f.k+'=this.value;updateFormProg()">'+(f.ro&&v?' <span class="link btn-sm" onclick="copyTxt(\''+esc(v)+'\')">复制</span>':'');
+  return '<div class="fld" id="fld-'+f.k+'"><label>'+(f.req?'<i>*</i> ':'')+esc(f.l)+'</label>'+inner+'</div>';
+}
+function reqCount(){var n=0;FORM.forEach(function(g){g.fields.forEach(function(f){if(f.req)n++;});});return n;}
+function filledCount(){var n=0;FORM.forEach(function(g){g.fields.forEach(function(f){if(f.req&&formVal[f.k]!==''&&formVal[f.k]!=null)n++;});});return n;}
+function updateFormProg(){
+  $('formProg').textContent='必填 '+reqCount()+' 项 · 已填 '+filledCount()+' 项';
+  $('formBadge').textContent=filledCount()+'/'+reqCount();
+  FORM.forEach(function(g){
+    var miss=g.fields.filter(function(f){return f.req&&(formVal[f.k]===''||formVal[f.k]==null);}).length;
+    var bd=document.querySelector('#grp-'+g.g.charAt(0)+' .grp-badge');
+    if(bd)bd.innerHTML=miss?'<span class="tag tag-red">'+miss+'</span>':'';
+  });
+}
+function fillShelf(shelfId,code){
+  formVal.shelf_id=shelfId;formVal.shelf_code=code;
+  renderTicketForm();toast('已带入货架 '+code+'，并定位到「问题定位」组');
+  var el=$('fld-shelf_id');if(el)el.scrollIntoView({behavior:'smooth',block:'center'});
+}
+function resetTicket(){
+  var keep={customer_name:formVal.customer_name,region:formVal.region,level:formVal.level,phone:formVal.phone};
+  formVal={channel:'自助创建',biz_type:'B端',risk:'咨询',urgency:'一般',escalate:'否',role:'其他'};
+  Object.assign(formVal,keep);
+  renderTicketForm();toast('已重置（保留自动带入字段）');
+}
+async function submitTicket(){
+  if(!S.cur){toast('请先搜索客户');return;}
+  var missing=[];
+  FORM.forEach(function(g){g.fields.forEach(function(f){if(f.req&&(formVal[f.k]===''||formVal[f.k]==null))missing.push(f.l);});});
+  if(missing.length){toast('还差 '+missing.length+' 项必填：'+missing.join('、'));updateFormProg();return;}
+  var cat=S.cats.find(function(c){return c.path===formVal.cat_path;});
+  var no='GD'+new Date().toISOString().slice(0,10).replace(/-/g,'')+String(Math.floor(Math.random()*900+100));
+  var t=await post('/api/tickets',{ticket_no:no,customer_id:S.cur.id,customer_name:S.cur.name,region:S.cur.region,channel:formVal.channel||'自助创建',biz_type:formVal.biz_type,cat_path:formVal.cat_path,cat_code:cat?cat.code:'',shelf_id:formVal.shelf_id,shelf_code:formVal.shelf_code,risk:formVal.risk,urgency:formVal.urgency,escalate:formVal.escalate==='是'||formVal.escalate===true,role:formVal.role,demand:formVal.demand||'',content:formVal.content,visible_content:'',status:'待受理',handler:null,creator:S.me.name,sla_hours:formVal.urgency==='非常紧急'?2:(formVal.urgency==='紧急'?4:24)});
+  await post('/api/ticket_events',{ticket_id:t.id,actor:S.me.name,action:'建单',detail:(formVal.demand||formVal.content||'').slice(0,80)});
+  toast('工单已创建：'+no);
+  formVal.cat_path='';formVal.shelf_id='';formVal.shelf_code='';formVal.content='';formVal.demand='';
+  await reloadTickets();renderTicketForm();
+}
+
+/* ===== 分类选取器（级联+搜索+常用置顶） ===== */
+var catSel={l1:null,l2:null};
+function openCatPop(){
+  var old=$('catPop');if(old){old.remove();return;}
+  var pop=document.createElement('div');pop.className='catpop';pop.id='catPop';
+  var r=$('ff_cat').getBoundingClientRect();
+  pop.style.left=Math.max(8,Math.min(window.innerWidth-570,r.left))+'px';
+  pop.style.top=(r.bottom+4)+'px';
+  pop.innerHTML='<div style="padding:9px 11px"><input id="catSearch" placeholder="🔍 搜索分类关键词（如：断网 / 撤架 / 退款）" style="width:100%" oninput="catSearch(this.value)"></div>'+
+    '<div id="catHot" style="padding:0 11px 8px"></div><div class="catcols" id="catCols"></div>';
+  document.body.appendChild(pop);
+  renderCatHot();renderCatCascader();
+  setTimeout(function(){$('catSearch').focus();},50);
+  document.addEventListener('click',catPopOutside);
+}
+function catPopOutside(e){var p=$('catPop');if(p&&!p.contains(e.target)&&e.target.id!=='ff_cat'){p.remove();document.removeEventListener('click',catPopOutside);}}
+function closeCatPop(){var p=$('catPop');if(p)p.remove();document.removeEventListener('click',catPopOutside);}
+function renderCatHot(){
+  var hot=S.cats.filter(function(c){return c.hot;}).slice(0,8);
+  $('catHot').innerHTML='<div class="mini" style="margin-bottom:3px">常用分类</div>'+hot.map(function(c){return '<span class="chip" onclick="pickCat(\''+esc(c.path)+'\')">'+esc(String(c.path).split(' > ')[2])+'</span>';}).join('');
+}
+function pickCat(path){
+  formVal.cat_path=path;$('ff_cat').value=path;updateFormProg();closeCatPop();
+}
+function renderCatCascader(){
+  var tree=S.catTree,html='';
+  var l1s=Object.keys(tree);
+  if(!catSel.l1||!tree[catSel.l1])catSel.l1=l1s[0];
+  html+='<div class="catcol">'+l1s.map(function(a){return '<div class="catitem'+(catSel.l1===a?' on':'')+'" onclick="catSel.l1=\''+esc(a)+'\';catSel.l2=null;renderCatCascader()">'+esc(a)+'</div>';}).join('')+'</div>';
+  var l2s=tree[catSel.l1]?Object.keys(tree[catSel.l1]):[];
+  if(!catSel.l2||l2s.indexOf(catSel.l2)<0)catSel.l2=l2s[0];
+  html+='<div class="catcol">'+l2s.map(function(b){return '<div class="catitem'+(catSel.l2===b?' on':'')+'" onclick="catSel.l2=\''+esc(b)+'\';renderCatCascader()">'+esc(b)+'</div>';}).join('')+'</div>';
+  var l3s=(tree[catSel.l1]&&tree[catSel.l1][catSel.l2])||[];
+  html+='<div class="catcol">'+l3s.map(function(x){return '<div class="catitem" onclick="pickCat(\''+esc(x.path)+'\')">'+esc(x.leaf)+'</div>';}).join('')+'</div>';
+  $('catCols').innerHTML=html;
+}
+function catSearch(kw){
+  kw=kw.trim();
+  if(!kw){renderCatCascader();return;}
+  var hits=S.cats.filter(function(c){return String(c.path).indexOf(kw)>=0;});
+  $('catCols').innerHTML='<div class="catcol" style="flex:1">'+(hits.length?hits.map(function(c){
+    var leaf=String(c.path).split(' > ')[2];
+    var hl=leaf.split(kw).join('<b style="background:#fde68a">'+kw+'</b>');
+    return '<div class="catitem" onclick="pickCat(\''+esc(c.path)+'\')">'+hl+'<div class="mini">'+esc(c.path)+'</div></div>';
+  }).join(''):'<div style="padding:14px;color:var(--sub)">未找到匹配分类，换个关键词试试（支持全路径匹配）</div>')+'</div>';
+}
+
+/* ===== 工具箱抽屉 ===== */
+var PHRASES=['您好，请问有什么可以帮您？','非常抱歉给您带来不便，我们马上核实处理。','您反馈的问题已记录，将在24小时内答复。','感谢您的反馈，祝您生活愉快！'];
+function openDrawer(){
+  var m=modal('<h3 style="margin-bottom:10px">🧰 工具箱</h3>'+
+    '<div class="card"><h3>💬 话术库（点击插入工单内容）</h3>'+PHRASES.map(function(p,i){return '<div class="chip" onclick="insPhrase('+i+')">'+esc(p)+'</div>';}).join('')+'</div>'+
+    '<div class="card"><h3>📞 外呼记录</h3>'+tbl(['时间','类型','号码','时长'],[['2026-10-19 14:02','呼入','138****5678','3分12秒'],['2026-10-18 09:41','呼出','137****2211','1分48秒']])+'</div>'+
+    '<div class="card"><h3>🧮 结算工具</h3><div class="mini" style="margin-bottom:6px">按待结算金额与结算方式估算税费</div><div style="display:flex;gap:6px;align-items:center"><input id="stAmt" placeholder="金额（元）" style="width:110px"><select id="stWay"><option>个人</option><option>对公</option></select><button class="btn btn-primary btn-sm" onclick="toast(\'税费约 ¥\'+(parseFloat(document.getElementById(\'stAmt\').value||0)*(document.getElementById(\'stWay\').value===\'对公\'?0.06:0.03)).toFixed(2))">测算</button></div></div>',420);
+  window.insPhrase=function(i){formVal.content=(formVal.content||'')+PHRASES[i];if($('ff_content'))$('ff_content').value=formVal.content;updateFormProg();toast('已插入工单内容');m.remove();};
+}
+
+/* ===== 二线：受理队列 ===== */
+var L2_CHIPS=['全部','待受理','处理中','待回访','已挂起','已完结'];
+function slaLeft(t){
+  var h=t.sla_hours||24;
+  var created=new Date(t.created_at.replace(' ','T'));
+  var left=h-(Date.now()-created.getTime())/36e5;
+  return left;
+}
+function slaHtml(t){
+  var left=slaLeft(t);
+  if(t.status==='已完结')return '<span class="tag tag-gray">已完结</span>';
+  if(left<0)return '<span class="tag tag-red">SLA 超时 '+Math.abs(left).toFixed(1)+'h</span>';
+  return left<h*0.25?'<span class="tag tag-red">剩余 '+left.toFixed(1)+'h</span>':'<span class="tag tag-green">剩余 '+left.toFixed(1)+'h</span>';
+}
+function renderQueue(){
+  var chips=$('qChips');if(!chips)return;
+  chips.innerHTML=L2_CHIPS.map(function(s){
+    var n=s==='全部'?S.tickets.length:S.tickets.filter(function(t){return t.status===s;}).length;
+    return '<span class="chip'+(S.qFilter===s?' on':'')+'" onclick="S.qFilter=\''+s+'\';renderQueue()">'+s+' '+n+'</span>';
+  }).join('');
+  var kw=($('qSearch').value||'').trim();
+  var list=S.tickets.filter(function(t){return S.qFilter==='全部'||t.status===S.qFilter;})
+    .filter(function(t){return !kw||String(t.ticket_no).indexOf(kw)>=0||String(t.customer_name).indexOf(kw)>=0||String(t.cat_path).indexOf(kw)>=0;});
+  $('qList').innerHTML=list.length?list.map(function(t){
+    return '<div class="qcard'+(S.curTicket&&S.curTicket.id===t.id?' on':'')+'" onclick="pickTicket('+t.id+')">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px"><b class="mono">'+esc(t.ticket_no)+'</b>'+tag(t.urgency,t.urgency==='一般'?'gray':t.urgency==='紧急'?'orange':'red')+'</div>'+
+      '<div style="margin-bottom:3px">'+slaHtml(t)+'</div>'+
+      '<div class="mini">'+esc(t.cat_path)+'</div><div class="mini">'+esc(t.customer_name)+' · '+statusTag(t.status)+'</div></div>';
+  }).join(''):'<div class="card"><div class="mini" style="text-align:center;padding:16px">队列为空</div></div>';
+}
+function pickTicket(id){
+  var t=S.tickets.find(function(x){return x.id===id;});if(!t)return;
+  S.curTicket=t;
+  S.cur=S.customers.find(function(c){return c.id===t.customer_id;})||S.cur;
+  renderQueue();renderBiz('bizTabs2','bizBody2','bizTab2');renderClosureForm();renderCustBrief();
+  openWin();
+}
+/* 悬浮处理窗 */
+function openWin(){
+  var t=S.curTicket;
+  if(!t){$('fab').classList.add('hidden');$('wpanel').classList.add('hidden');return;}
+  $('wpanel').classList.remove('hidden');renderWin();
+}
+function closeWin(){$('wpanel').classList.add('hidden');$('fab').classList.remove('hidden');renderFab();}
+function renderFab(){
+  var t=S.curTicket,f=$('fab');
+  if(!t||$('wpanel').classList.contains('hidden')){f.classList.add('hidden');return;}
+  f.classList.remove('hidden');
+  f.innerHTML=esc(t.ticket_no)+' · '+esc(t.status)+'<div class="sla">'+slaHtml(t)+'</div>';
+}
+function renderWin(){
+  var t=S.curTicket;if(!t)return;
+  var acts=[];
+  if(t.status==='待受理')acts.push(['受理','btn-primary','acceptTicket']);
+  if(t.status==='处理中')acts.push(['提交处理方案','btn-primary','submitPlan'],['完结工单','btn-primary','finishTicket']);
+  acts.push(['转派','btn','transferTicket'],['升级','btn','escalateTicket']);
+  if(t.status==='处理中')acts.push(['挂起','btn','holdTicket']);
+  var cl=S.closures.find(function(c){return c.ticket_id===t.id;});
+  $('wpanel').innerHTML='<div class="mhd"><div><b class="mono">'+esc(t.ticket_no)+'</b> '+statusTag(t.status)+' '+tag(t.risk,'red')+' '+slaHtml(t)+'<div class="mini">创建：'+esc(t.created_at)+' · 建单人：'+esc(t.creator)+'</div></div><span class="link" onclick="closeWin()">✕</span></div>'+
+    '<div class="mbd">'+
+    '<div class="grid4" style="margin-bottom:8px">'+kv('工单分类',esc(t.cat_path))+kv('客户',esc(t.customer_name))+kv('大区',esc(t.region))+kv('关联货架',esc(t.shelf_code))+'</div>'+
+    '<div class="alert-orange" style="margin-bottom:8px"><b>客户诉求：</b>'+esc(t.demand||'—')+'</div>'+
+    (cl?'<div class="alert-blue" style="margin-bottom:8px"><b>已提交闭环：</b>'+esc(cl.problem)+' · 赔付合计 ¥'+(Number(cl.refund_amount||0)+Number(cl.pay_amount||0)).toFixed(2)+'</div>':'')+
+    '<h3 style="font-size:13px;margin-bottom:4px">处理时间线</h3><div style="max-height:180px;overflow-y:auto;margin-bottom:8px">'+timelineOf(t.id)+'</div>'+
+    '<div class="fld"><label>跟进记录</label><textarea id="fuTxt" rows="2" placeholder="填写跟进内容，或点选快捷短语"></textarea></div>'+
+    '<div style="margin:4px 0 8px">'+['已联系客户核实','已转接口人','处理完成已回访','待客户补充资料'].map(function(s){return '<span class="chip" onclick="document.getElementById(\'fuTxt\').value=\''+s+'\'">'+s+'</span>';}).join('')+'</div>'+
+    '<div style="display:flex;gap:6px;flex-wrap:wrap">'+acts.map(function(a){return '<button class="btn '+a[1]+' btn-sm" onclick="'+a[2]+'()">'+a[0]+'</button>';}).join('')+'</div>'+
+    '</div>';
+  renderFab();
+}
+async function actTicket(newStatus,action,detail){
+  var t=S.curTicket;if(!t)return;
+  if(newStatus)await patch('/api/tickets/'+t.id,{status:newStatus,handler:t.handler||S.me.name});
+  await post('/api/ticket_events',{ticket_id:t.id,actor:S.me.name,action:action,detail:detail});
+  await reloadTickets();renderWin();toast(action+' 已完成，时间线已留痕');
+}
+async function acceptTicket(){await actTicket('处理中','受理','已受理，开始处理');}
+async function finishTicket(){await actTicket('已完结','完结','工单完结');closeWin();}
+async function holdTicket(){await actTicket('已挂起','挂起','挂起等待外部信息');}
+async function escalateTicket(){await actTicket(null,'升级','已升级至上级主管跟进');}
+async function transferTicket(){
+  var m=modal('<h3 style="margin-bottom:8px">转派工单</h3><div class="fld"><label>转派给</label><select id="tfTo">'+S.customers.map(function(){return '';}).join('')+'<option>小何（二线工单）</option><option>值班主管</option></select></div><div style="text-align:right;margin-top:8px"><button class="btn btn-primary btn-sm" id="tfOk">确认转派</button></div>',380);
+  m.querySelector('#tfOk').onclick=async function(){
+    await actTicket(null,'转派',m.querySelector('#tfTo').value+' 接手处理');m.remove();
+  };
+}
+async function submitPlan(){
+  var txt=$('fuTxt').value.trim();
+  if(!txt){toast('请先填写跟进记录');return;}
+  await post('/api/ticket_events',{ticket_id:S.curTicket.id,actor:S.me.name,action:'跟进',detail:txt});
+  await reloadTickets();renderWin();toast('处理方案已提交');
+}
+/* 右栏：闭环表单 */
+var FF=[
+  ['product_codes','商品编码（多个/隔开）'],['product_name','商品名称'],['problem','商品问题',[null,'商品过期','包装破损','商品少货','口感异常','商品异物','价格异议','其他'],1],
+  ['visible_issue','异常是否肉眼可见',['是','否']],['prod_date','商品生产日期'],['decider','理赔决策人',['/','主管-张强','值班主管']],
+  ['refund_flag','是否需要退款',['否','是','部分退款']],['refuse_claim','是否拒绝按价赔',['否','是']],
+  ['demand_amount','客要求退款金额(元)','num'],['refund_amount','原路退款金额(元)','num'],['pay_amount','赔付金额(元)','num'],
+  ['energy_points','能量贝赔付','num'],['coupon_gift','优惠券赠送(面额x张)'],['water_gift','水饮赠送量'],['supplier_refund','供应商退款金额(元)','num'],['note','处理说明','textarea'],
+];
+var ffVal={};
+function renderClosureForm(){
+  var el=$('closureCard');if(!el)return;
+  if(!S.curTicket){el.innerHTML='<h3>🔒 工单跟进闭环录入</h3><div class="mini" style="padding:14px 0;text-align:center">先在左侧队列点选工单</div>';return;}
+  var cl=S.closures.find(function(c){return c.ticket_id===S.curTicket.id;});
+  ffVal=cl?{product_codes:cl.product_codes,product_name:cl.product_name,problem:cl.problem,visible_issue:cl.visible_issue?'是':'否',prod_date:cl.prod_date,decider:cl.decider,refund_flag:cl.refund_flag,refuse_claim:cl.refuse_claim?'是':'否',demand_amount:cl.demand_amount,refund_amount:cl.refund_amount,pay_amount:cl.pay_amount,energy_points:cl.energy_points,coupon_gift:cl.coupon_gift,water_gift:cl.water_gift,supplier_refund:cl.supplier_refund,note:cl.note}:ffVal;
+  el.innerHTML='<h3>🔒 工单跟进闭环录入 <span class="mini">'+esc(S.curTicket.ticket_no)+(cl?'（已提交，可修改覆盖）':'')+'</span></h3>'+
+    FF.map(function(f){
+      var k=f[0],lbl=f[1],type=f[2],req=f[3];
+      var v=ffVal[k]==null?'':ffVal[k];
+      var inner;
+      if(Array.isArray(type))inner='<select onchange="ffVal.'+k+'=this.value">'+type.map(function(o){return '<option'+(String(v)===String(o)?' selected':'')+'>'+esc(o)+'</option>';}).join('')+'</select>';
+      else if(type==='textarea')inner='<textarea rows="2" oninput="ffVal.'+k+'=this.value">'+esc(v)+'</textarea>';
+      else inner='<input type="'+(type==='num'?'number':'text')+'" value="'+esc(v)+'" oninput="ffVal.'+k+'=this.value">';
+      return '<div class="fld"><label>'+(req?'<i>*</i> ':'')+esc(lbl)+'</label>'+inner+'</div>';
+    }).join('')+
+    '<div class="sticky-foot"><button class="btn btn-primary btn-sm" onclick="submitClosure()">提交闭环</button><button class="btn btn-sm" onclick="ffVal={};renderClosureForm()">重置</button></div>';
+}
+async function submitClosure(){
+  var t=S.curTicket;if(!t)return;
+  if(!ffVal.problem){toast('「商品问题」必填');return;}
+  var existing=S.closures.find(function(c){return c.ticket_id===t.id;});
+  var body={ticket_id:t.id,product_codes:ffVal.product_codes||'',product_name:ffVal.product_name||'',problem:ffVal.problem,visible_issue:ffVal.visible_issue==='是',prod_date:ffVal.prod_date||'',decider:ffVal.decider||'/',refund_flag:ffVal.refund_flag||'否',refuse_claim:ffVal.refuse_claim==='是',demand_amount:+ffVal.demand_amount||0,refund_amount:+ffVal.refund_amount||0,pay_amount:+ffVal.pay_amount||0,energy_points:+ffVal.energy_points||0,coupon_gift:ffVal.coupon_gift||'',water_gift:ffVal.water_gift||'',supplier_refund:+ffVal.supplier_refund||0,note:ffVal.note||'',updated_by:S.me.name};
+  if(existing)await patch('/api/closures/'+existing.id,body);
+  else await post('/api/closures',body);
+  var money='原路退款 ¥'+(body.refund_amount||0).toFixed(2)+' + 现金赔付 ¥'+(body.pay_amount||0).toFixed(2);
+  await post('/api/ticket_events',{ticket_id:t.id,actor:S.me.name,action:'跟进闭环',detail:'商品问题：'+body.problem+'；'+money+'；'+(body.note||'无补充说明')});
+  await reloadTickets();renderClosureForm();renderWin();toast('闭环记录已提交并写入时间线');
+}
+function closureView(cl){
+  return '<div class="grid2">'+
+    kv('商品编码',esc(cl.product_codes))+kv('商品名称',esc(cl.product_name))+kv('商品问题',esc(cl.problem))+kv('异常肉眼可见',cl.visible_issue?'是':'否')+
+    kv('生产日期',esc(cl.prod_date))+kv('理赔决策人',esc(cl.decider))+kv('是否退款',esc(cl.refund_flag))+kv('拒绝按价赔',cl.refuse_claim?'是':'否')+
+    kv('客要求退款','¥'+Number(cl.demand_amount||0).toFixed(2))+kv('原路退款','¥'+Number(cl.refund_amount||0).toFixed(2))+kv('赔付金额','¥'+Number(cl.pay_amount||0).toFixed(2))+kv('能量贝赔付',cl.energy_points)+
+    kv('优惠券赠送',esc(cl.coupon_gift))+kv('水饮赠送',esc(cl.water_gift))+kv('供应商退款','¥'+Number(cl.supplier_refund||0).toFixed(2))+kv('处理说明',esc(cl.note))+'</div>';
+}
+function renderCustBrief(){
+  var el=$('custBrief');if(!el)return;
+  if(!S.curTicket){el.innerHTML='';return;}
+  var c=S.customers.find(function(x){return x.id===S.curTicket.customer_id;});
+  var tks=S.tickets.filter(function(t){return c&&t.customer_id===c.id;});
+  el.innerHTML='<h3>👤 客户信息</h3>'+(c?kv('等级',esc(c.level))+kv('名下货架',S.shelves.filter(function(s){return s.customer_id===c.id;}).length+' 台')+kv('近30天工单',tks.length+' 张')+kv('历史投诉',tks.filter(function(t){return t.risk==='投诉';}).length+' 次')+kv('当前处理人',esc(S.curTicket.handler||'待分配')):'')+
+    '<div class="sec-title">快捷话术</div>'+['已联系客户核实','已转接口人','处理完成已回访','待客户补充资料'].map(function(s){return '<span class="chip" onclick="toast(\'已复制：'+s+'\')">'+s+'</span>';}).join('')+
+    '<div class="sec-title">SLA 规则</div><div class="mini">紧急：4小时响应 / 24小时完结；一般：24小时响应 / 48小时完结</div>';
+}
+
+/* ===== 管理层 ===== */
+function renderStats(){
+  var el=$('stats');if(!el)return;
+  var today=new Date().toISOString().slice(0,10);
+  var todayNew=S.tickets.filter(function(t){return String(t.created_at).slice(0,10)===today;}).length;
+  var yesterday=3;
+  var pend=S.tickets.filter(function(t){return t.status==='待受理';});
+  var pendUrg=pend.filter(function(t){return t.urgency!=='一般';}).length;
+  var doing=S.tickets.filter(function(t){return t.status==='处理中';});
+  var doingWarn=doing.filter(function(t){return slaLeft(t)<4;}).length;
+  var doneToday=S.events.filter(function(e){return e.action==='完结'&&String(e.created_at).slice(0,10)===today;}).length;
+  var doneTotal=S.tickets.filter(function(t){return t.status==='已完结';}).length;
+  var resp=[];S.tickets.forEach(function(t){
+    var a=S.events.find(function(e){return e.ticket_id===t.id&&e.action==='建单';}),b=S.events.find(function(e){return e.ticket_id===t.id&&e.action==='受理';});
+    if(a&&b)resp.push((new Date(b.created_at.replace(' ','T'))-new Date(a.created_at.replace(' ','T')))/36e5);
+  });
+  var avg=resp.length?(resp.reduce(function(s,x){return s+x;},0)/resp.length):0;
+  el.innerHTML=[
+    ['今日新增',todayNew,'环比昨日 '+(todayNew>=yesterday?'+':'')+(todayNew-yesterday),''],
+    ['待处理',pend.length,'紧急 '+pendUrg+' · 一般 '+(pend.length-pendUrg),''],
+    ['处理中',doing.length,doingWarn?'⚠ '+doingWarn+' 张临超时':'无临超时',doingWarn?'warn':''],
+    ['今日已完结',doneToday,'完结率 '+(S.tickets.length?Math.round(doneTotal/S.tickets.length*100):0)+'%',''],
+    ['平均响应时长',avg.toFixed(1)+'h','目标 ≤ 4h',avg>4?'warn':''],
+  ].map(function(s){return '<div class="stat '+s[3]+'"><div class="n">'+s[1]+'</div><div class="l">'+s[0]+' · '+s[2]+'</div></div>';}).join('');
+}
+function renderMgrTable(){
+  var el=$('mgrTable');if(!el)return;
+  var days=+$('fRange').value,region=$('fRegion').value,status=$('fStatus').value,urg=$('fUrg').value,kw=($('fKey').value||'').trim();
+  var since=new Date(Date.now()-days*864e5).toISOString().slice(0,10);
+  var list=S.tickets.filter(function(t){
+    var d=String(t.created_at).slice(0,10);
+    return (days>=999||d>=since)&&(!region||t.region===region)&&(!status||t.status===status)&&(!urg||t.urgency===urg)&&(!kw||String(t.ticket_no).indexOf(kw)>=0||String(t.customer_name).indexOf(kw)>=0||String(t.cat_path).indexOf(kw)>=0);
+  });
+  $('mgrCount').textContent='共 '+list.length+' 条';
+  el.innerHTML=tbl(['工单号','分类','客户','大区','状态','紧急程度','风险','处理人','创建时间','SLA','操作'],list.map(function(t){
+    return [monoLink(t.ticket_no,'openMgrDetail('+t.id+')'),esc(t.cat_path),esc(t.customer_name),esc(t.region),statusTag(t.status),tag(t.urgency,t.urgency==='一般'?'gray':t.urgency==='紧急'?'orange':'red'),tag(t.risk,t.risk==='投诉'?'red':t.risk==='舆情风险'?'orange':'blue'),esc(t.handler||'待分配'),esc(t.created_at),slaHtml(t),'<span class="link" onclick="openMgrDetail('+t.id+')">查看详情</span>'];
+  }));
+}
+function openMgrDetail(tid){
+  var t=S.tickets.find(function(x){return x.id===tid;});if(!t)return;
+  var cl=S.closures.find(function(c){return c.ticket_id===tid;});
+  modal('<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px"><b class="mono" style="font-size:15px">'+esc(t.ticket_no)+'</b>'+statusTag(t.status)+tag(t.risk,'red')+'<span class="tag tag-blue">管理层 · 只读</span></div>'+
+    '<div class="grid4" style="margin-bottom:10px">'+kv('工单分类',esc(t.cat_path))+kv('客户/大区',esc(t.customer_name)+' / '+esc(t.region))+kv('当前处理人',esc(t.handler||'待分配'))+kv('创建时间 / SLA',esc(t.created_at)+' / '+(t.sla_hours||24)+'h')+'</div>'+
+    '<div class="alert-orange" style="margin-bottom:10px"><b>工单内容：</b>'+esc(t.content||t.demand||'—')+'</div>'+
+    '<h3 style="font-size:13px;margin-bottom:6px">跟进闭环字段记录（二线提交）</h3>'+(cl?closureView(cl):'<div class="mini" style="padding:10px;border:1px dashed var(--line);border-radius:8px;text-align:center">暂无二线闭环记录</div>')+
+    '<h3 style="font-size:13px;margin:10px 0 6px">处理时间线</h3>'+timelineOf(tid)+
+    '<div class="mini" style="margin-top:10px;text-align:center">处理与闭环录入请在二线工作台操作</div>',900);
+}
+
+/* ===== 用户管理 ===== */
+async function renderUsers(){
+  if(!S.views.includes('users'))return;
+  var rows=await api('/api/users');
+  var roleNames={admin:'管理员(管理层)',agent:'一线客服',handler:'二线工单',member:'普通成员'};
+  $('userTable').innerHTML=tbl(['ID','账号','昵称','角色','状态','授权视图','操作'],rows.map(function(u){
+    return [u.id,esc(u.username),esc(u.nick),esc(roleNames[u.role]||u.role),tag(u.status==='approved'?'正常':u.status==='pending'?'待审':'禁用',u.status==='approved'?'green':u.status==='pending'?'orange':'red'),
+      '<span class="mini">'+esc((u.permissions||[]).join('、')||'—')+'</span>',
+      '<span class="link" onclick="editUser('+u.id+')">编辑</span> '+(u.role==='admin'?'':'<span class="link" style="color:var(--red)" onclick="delUser('+u.id+')">删除</span>')];
+  }));
+  window._users=rows;
+}
+function editUser(id){
+  var u=window._users.find(function(x){return x.id===id;});if(!u)return;
+  var roleNames={admin:'管理员(管理层)',agent:'一线客服',handler:'二线工单',member:'普通成员'};
+  var m=modal('<h3 style="margin-bottom:10px">编辑用户 · '+esc(u.username)+'</h3>'+
+    '<div class="fld"><label>角色</label><select id="euRole">'+Object.keys(roleNames).map(function(r){return '<option value="'+r+'"'+(u.role===r?' selected':'')+'>'+roleNames[r]+'</option>';}).join('')+'</select></div>'+
+    '<div class="fld"><label>状态</label><select id="euStatus"><option value="approved"'+(u.status==='approved'?' selected':'')+'>正常</option><option value="disabled"'+(u.status==='disabled'?' selected':'')+'>禁用</option><option value="pending"'+(u.status==='pending'?' selected':'')+'>待审</option></select></div>'+
+    '<div class="fld"><label>追加授权视图</label><div>'+['front','second','manager','calc'].map(function(v){return '<span class="chip'+((u.permissions||[]).includes(v)?' on':'')+'" onclick="this.classList.toggle(\'on\')">'+VIEWS_META[v]+'</span>';}).join('')+'</div><div class="mini">角色默认视图自动包含，此处为追加授权</div></div>'+
+    '<div class="fld"><label>重置密码（留空不改）</label><input id="euPass" type="password" placeholder="≥6位"></div>'+
+    '<div style="text-align:right;margin-top:8px"><button class="btn btn-primary btn-sm" id="euOk">保存</button></div>',460);
+  m.querySelector('#euOk').onclick=async function(){
+    var body={role:m.querySelector('#euRole').value,status:m.querySelector('#euStatus').value,nick:u.nick};
+    var perms=[...m.querySelectorAll('.chip.on')].map(function(c){return c.textContent.trim();});
+    var permMap={'☎️ 一线工作台':'front','🧾 二线工单':'second','📊 管理层':'manager','🧮 理赔计算器':'calc'};
+    body.permissions=perms.map(function(p){return permMap[p];}).filter(Boolean);
+    if(m.querySelector('#euPass').value)body.password=m.querySelector('#euPass').value;
+    try{await patch('/api/users/'+u.id,body);m.remove();await renderUsers();toast('已保存');}catch(e){toast(e.message);}
+  };
+}
+async function delUser(id){
+  if(!confirm('确认删除该用户？'))return;
+  try{await api('/api/users/'+id,{method:'DELETE'});await renderUsers();toast('已删除');}catch(e){toast(e.message);}
+}
+
+/* ===== 数据浏览器 ===== */
+async function renderDataBrowser(){
+  if(!S.views.includes('data'))return;
+  var data=await api('/api/admin/tables');
+  $('dataBrowser').innerHTML=data.map(function(t){
+    return '<div class="card"><h3>📋 '+esc(t.table)+' <span class="mini">('+t.rows.length+' 行)</span></h3>'+tbl(t.columns,t.rows.map(function(r){return t.columns.map(function(c){var v=r[c];return v===null||v===undefined?'<span class="mini">NULL</span>':esc(String(v)).slice(0,60);});}))+'</div>';
+  }).join('');
+}
+
+/* ===== 启动 ===== */
+api('/api/me').then(boot).catch(function(){showLogin();});
+</script>
+</body>
+</html>
