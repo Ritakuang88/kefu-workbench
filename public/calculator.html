@@ -870,6 +870,15 @@ var DEFAULT_GATE = {
   code: 'feng1'   /* 本地兜底访问码（仅 url 留空时生效） */
 };
 function gateInit(){
+  /* 嵌入工作台模式：免门禁，自动以当前登录人身份进入 */
+  try{
+    var qp=new URLSearchParams(location.search);
+    if(qp.get('embed')==='1'){
+      var nm=qp.get('user')||'工作台用户';
+      try{ localStorage.setItem('claimcalc_user',JSON.stringify({name:nm,code:'',t:Date.now()})); }catch(e){}
+      $('gate').classList.add('hidden'); return;
+    }
+  }catch(e){}
   if(DEFAULT_GATE.url){ try{ fetch(DEFAULT_GATE.url).catch(function(){}); }catch(e){} }  // 打开即"预热"云函数，避免冷启动让登录变慢
   var u=null; try{ u=JSON.parse(localStorage.getItem('claimcalc_user')||'null'); }catch(e){}
   if(!u) return;                          // 没登录过 → 显示门禁

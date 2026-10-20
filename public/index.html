@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>客服工作台</title>
 <style>
-:root{--brand:#2563eb;--brand-l:#eff6ff;--brand-d:#1d4ed8;--ink:#1f2937;--sub:#6b7280;--line:#e5e7eb;--bg:#f3f4f6;--card:#fff;--red:#dc2626;--orange:#ea580c;--green:#16a34a;--gray-l:#f9fafb;--r:8px}
+:root{--brand:#1677ff;--brand-l:#e6f4ff;--brand-d:#0e42a6;--ink:#1f2329;--sub:#646a73;--line:#e5e6eb;--bg:#f2f3f5;--card:#fff;--red:#f53f3f;--orange:#ff7d00;--green:#00b42a;--gray-l:#fafbfc;--r:8px;--shadow:0 1px 3px rgba(0,0,0,.06)}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;font-size:14px;color:var(--ink);background:var(--bg)}
 .hidden{display:none!important}
@@ -118,7 +118,51 @@ table.tbl tr:hover td{background:#fafbfc}
 .alert-orange{background:#fff7ed;border:1px solid #fdba74;color:#9a3412;border-radius:8px;padding:8px 10px;font-size:12.5px}
 .alert-blue{background:var(--brand-l);border:1px solid #bfdbfe;color:var(--brand-d);border-radius:8px;padding:8px 10px;font-size:12.5px}
 .toast{position:fixed;top:18px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:9px 20px;border-radius:8px;font-size:13px;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,.3)}
-iframe.calcframe{width:100%;height:calc(100vh - 58px);border:none;background:#fff}
+/* 顶栏蓝色渐变 + 角色切换器 */
+.topbar{background:linear-gradient(90deg,#0e42a6,#1677ff);color:#fff;padding:0 16px;height:52px;display:flex;gap:12px;align-items:center;position:sticky;top:0;z-index:30;box-shadow:0 2px 8px rgba(14,66,166,.25)}
+.topbar h2{font-size:15px;margin-right:4px;white-space:nowrap}
+.topbar .logo-dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;margin-right:6px;box-shadow:0 0 0 2px rgba(0,180,42,.3)}
+.role-switch{display:flex;background:rgba(255,255,255,.16);border-radius:8px;padding:3px;margin-left:4px}
+.role-btn{border:none;background:none;padding:5px 14px;font-size:12.5px;color:rgba(255,255,255,.85);border-radius:6px;cursor:pointer;font-family:inherit}
+.role-btn.active{background:#fff;color:var(--brand);font-weight:600}
+.topbar input,.topbar select{background:rgba(255,255,255,.95);border:none}
+.topbar .btn{background:rgba(255,255,255,.95);border:none;color:var(--brand);font-weight:600}
+.topbar .btn-sm{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:#fff;font-weight:400}
+.topbar .btn-sm:hover{background:rgba(255,255,255,.3);color:#fff}
+/* AI 预判预警条 */
+.ai-bar{flex-shrink:0;display:flex;align-items:center;gap:12px;padding:0 16px;height:44px;color:#fff;font-size:13px;background:linear-gradient(90deg,#d4380d,#fa541c 55%,#fa8c16);box-shadow:0 2px 8px rgba(212,56,13,.25);z-index:40;overflow-x:auto}
+.ai-bar.slim{height:30px;background:linear-gradient(90deg,#873800,#d4380d)}
+.ai-bar .ai-ico{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.ai-bar .pulse{width:8px;height:8px;border-radius:50%;background:#fff;animation:aipulse 1.2s infinite;flex-shrink:0}
+@keyframes aipulse{0%{box-shadow:0 0 0 0 rgba(255,255,255,.7)}70%{box-shadow:0 0 0 8px rgba(255,255,255,0)}100%{box-shadow:0 0 0 0 rgba(255,255,255,0)}}
+.ai-bar .ai-txt{white-space:nowrap}
+.ai-bar button{border:1px solid rgba(255,255,255,.5);background:rgba(255,255,255,.15);color:#fff;border-radius:6px;padding:3px 12px;font-size:12px;cursor:pointer;flex-shrink:0;font-family:inherit}
+.ai-bar button:hover{background:rgba(255,255,255,.28)}
+.ai-alert{display:flex;align-items:center;gap:10px;white-space:nowrap;cursor:pointer;padding:4px 10px;border-radius:6px}
+.ai-alert:hover{background:rgba(255,255,255,.15)}
+.ai-alert .lv{font-size:11px;font-weight:700;border-radius:4px;padding:1px 6px;flex-shrink:0}
+.ai-alert .lv.hi{background:#fff;color:#d4380d}.ai-alert .lv.mid{background:rgba(255,255,255,.9);color:#fa541c}.ai-alert .lv.lo{background:rgba(255,255,255,.6);color:#873800}
+/* 标签页计数角标 */
+.tab{position:relative}
+.tab .cnt{display:inline-block;min-width:16px;text-align:center;background:var(--brand-l);color:var(--brand);border-radius:8px;font-size:11px;font-weight:700;padding:0 5px;margin-left:5px;line-height:16px;vertical-align:middle}
+.tab.on .cnt{background:var(--brand);color:#fff}
+/* 统计卡升级 */
+.stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.stat .n{font-size:30px;font-weight:800;color:var(--brand);line-height:1.15}
+.stat .t{font-size:13px;color:var(--ink);font-weight:600;margin-top:2px}
+.stat .s{font-size:12px;color:var(--sub);margin-top:2px}
+.stat.warn .n{color:var(--orange)}
+.stat.warn::after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--orange)}
+.stat::after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--brand)}
+/* 二线脉冲悬浮球 */
+.fab{position:fixed;right:22px;bottom:22px;background:var(--brand);color:#fff;border-radius:24px;padding:10px 18px;font-size:13px;font-weight:700;box-shadow:0 6px 18px rgba(22,119,255,.4);cursor:pointer;z-index:50;border:none;display:flex;align-items:center;gap:8px;font-family:inherit}
+.fab .sla{font-size:11px;font-weight:400;background:rgba(255,255,255,.2);border-radius:12px;padding:2px 10px}
+.fab-dot{position:fixed;right:22px;bottom:22px;width:56px;height:56px;border-radius:50%;background:var(--red);color:#fff;border:none;z-index:50;cursor:pointer;box-shadow:0 6px 20px rgba(245,63,63,.5);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;animation:fabpulse 1.4s infinite;font-family:inherit}
+.fab-dot .d1{font-size:16px}
+@keyframes fabpulse{0%{box-shadow:0 6px 20px rgba(245,63,63,.5),0 0 0 0 rgba(245,63,63,.4)}70%{box-shadow:0 6px 20px rgba(245,63,63,.5),0 0 0 14px rgba(245,63,63,0)}100%{box-shadow:0 6px 20px rgba(245,63,63,.5),0 0 0 0 rgba(245,63,63,0)}}
+/* 卡片轻阴影 */
+.card{box-shadow:var(--shadow)}
+iframe.calcframe{width:100%;height:calc(100vh - 52px);border:none;background:#fff}
 </style>
 </head>
 <body>
@@ -152,13 +196,15 @@ iframe.calcframe{width:100%;height:calc(100vh - 58px);border:none;background:#ff
 
     <!-- ===== 一线工作台 ===== -->
     <section class="view" id="view-front">
-      <div class="pagehead">
-        <h2>一线工作台</h2>
-        <select id="sType"><option>手机号</option><option>客户ID</option><option>货架编码</option><option>售后订单号</option></select>
-        <input id="sKey" placeholder="输入后回车查询，三栏同步刷新" style="flex:1;min-width:200px" onkeydown="if(event.key==='Enter')doSearch()">
-        <button class="btn btn-primary" onclick="doSearch()">搜索</button>
+      <div class="topbar">
+        <h2><span class="logo-dot"></span>客服工作台</h2>
+        <div class="role-switch" id="roleSwitch"></div>
+        <select id="sType" style="max-width:110px"><option>手机号</option><option>客户ID</option><option>货架编码</option><option>售后订单号</option></select>
+        <input id="sKey" placeholder="输入后回车查询，三栏同步刷新" style="flex:1;min-width:180px" onkeydown="if(event.key==='Enter')doSearch()">
+        <button class="btn" onclick="doSearch()">搜索</button>
         <button class="btn btn-sm" onclick="openDrawer()">🧰 工具箱</button>
       </div>
+      <div class="ai-bar" id="aiBar"></div>
       <div class="cols">
         <div><!-- 左栏 -->
           <div class="card" id="custCard"></div>
@@ -185,11 +231,13 @@ iframe.calcframe{width:100%;height:calc(100vh - 58px);border:none;background:#ff
 
     <!-- ===== 二线工作台 ===== -->
     <section class="view" id="view-second">
-      <div class="pagehead">
-        <h2>二线工作台</h2>
-        <span class="mini">受理队列 → 点选工单弹出处理窗；中栏可直接查询业务模块；右栏录入理赔闭环</span>
-        <button class="btn btn-sm" style="margin-left:auto" onclick="loadAll()">🔄 刷新</button>
+      <div class="topbar">
+        <h2><span class="logo-dot"></span>客服工作台</h2>
+        <div class="role-switch" id="roleSwitch2"></div>
+        <span style="font-size:12.5px;color:rgba(255,255,255,.75);margin-left:auto">受理队列 → 点选工单弹出处理窗；中栏可直接查询业务模块；右栏录入理赔闭环</span>
+        <button class="btn btn-sm" onclick="loadAll()">🔄 刷新</button>
       </div>
+      <div class="ai-bar" id="aiBar2"></div>
       <div class="cols" style="grid-template-columns:300px 1fr 340px">
         <div>
           <div class="card" style="padding:10px">
@@ -209,12 +257,17 @@ iframe.calcframe{width:100%;height:calc(100vh - 58px);border:none;background:#ff
         </div>
       </div>
       <div class="fab hidden" id="fab" onclick="openWin()">…</div>
+      <button class="fab-dot hidden" id="fabDot" onclick="openWin()" title="工单处理已最小化，点击展开"><span class="d1">⏱</span><span id="fabDotSub">--</span></button>
       <div class="wpanel hidden" id="wpanel"></div>
     </section>
 
     <!-- ===== 管理层 ===== -->
     <section class="view" id="view-manager">
-      <div class="pagehead"><h2>管理层 · 工单看板</h2><span class="mini">只读视图，处理操作请到二线工作台</span></div>
+      <div class="topbar">
+        <h2><span class="logo-dot"></span>客服工作台</h2>
+        <div class="role-switch" id="roleSwitch3"></div>
+        <span style="font-size:12.5px;color:rgba(255,255,255,.75);margin-left:auto">只读视图，处理操作请到二线工作台</span>
+      </div>
       <div class="statgrid" id="stats"></div>
       <div class="card" style="margin:0 12px">
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
@@ -238,13 +291,21 @@ iframe.calcframe{width:100%;height:calc(100vh - 58px);border:none;background:#ff
 
     <!-- ===== 用户管理 ===== -->
     <section class="view" id="view-users">
-      <div class="pagehead"><h2>用户管理</h2><button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="renderUsers()">刷新</button></div>
-      <div class="card" style="margin:12px"><div style="overflow-x:auto" id="userTable"></div></div>
+      <div class="topbar">
+        <h2><span class="logo-dot"></span>客服工作台</h2>
+        <span style="font-size:13px;margin-left:12px">用户管理</span>
+        <button class="btn btn-sm" style="margin-left:auto" onclick="renderUsers()">刷新</button>
+      </div>
+      <div style="padding:12px"><div class="card"><div style="overflow-x:auto" id="userTable"></div></div></div>
     </section>
 
     <!-- ===== 数据浏览 ===== -->
     <section class="view" id="view-data">
-      <div class="pagehead"><h2>数据浏览器</h2><span class="mini">各业务表最近 50 条</span><button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="renderDataBrowser()">刷新</button></div>
+      <div class="topbar">
+        <h2><span class="logo-dot"></span>客服工作台</h2>
+        <span style="font-size:13px;margin-left:12px">数据浏览器 · 各业务表最近 50 条</span>
+        <button class="btn btn-sm" style="margin-left:auto" onclick="renderDataBrowser()">刷新</button>
+      </div>
       <div style="padding:12px" id="dataBrowser"></div>
     </section>
 
@@ -286,6 +347,8 @@ async function boot(){
   S.me=me.user;S.views=me.allowed_views;
   $('login').classList.add('hidden');$('app').classList.remove('hidden');
   $('who').innerHTML=esc(S.me.name)+'<br><span style="opacity:.7">'+esc(S.me.role)+'</span> · <a href="#" style="color:#93c5fd" onclick="logout();return false">退出</a>';
+  var cf=$('calcFrame'); if(cf) cf.src='/calculator.html?embed=1&user='+encodeURIComponent(S.me.name);
+  renderRoleSwitch();
   var nav=$('nav');nav.innerHTML='';
   var order=['front','second','manager','calc','users','data'];
   order.forEach(function(v){
@@ -302,7 +365,88 @@ function switchView(v){
   var el=$('view-'+v);if(el)el.classList.add('on');
   document.querySelectorAll('.nav-item').forEach(function(x){x.classList.remove('on');});
   var n=$('nav-'+v);if(n)n.classList.add('on');
+  renderRoleSwitch();
 }
+/* 顶栏角色切换器（按权限渲染，跨视图常驻） */
+var ROLE_TABS=[['front','一线客服'],['second','二线工单'],['manager','管理层'],['calc','理赔计算器']];
+function renderRoleSwitch(){
+  ROLE_TABS.forEach(function(rt){
+    var v=rt[0];
+    ['roleSwitch','roleSwitch2','roleSwitch3'].forEach(function(id){
+      var box=$(id);if(!box)return;
+      if(!S.views.includes(v)){var b=box.querySelector('[data-v="'+v+'"]');if(b)b.remove();return;}
+      var btn=box.querySelector('[data-v="'+v+'"]');
+      if(!btn){btn=document.createElement('button');btn.className='role-btn';btn.setAttribute('data-v',v);btn.textContent=rt[1];btn.onclick=function(){switchView(v);};box.appendChild(btn);}
+      btn.className='role-btn'+(document.querySelector('#view-'+v+'.on')?' active':'');
+    });
+  });
+}
+/* ===== AI 预判预警条：扫描真实数据生成异常点 ===== */
+var aiDismissed={},aiSlim=false;
+function aiScan(){
+  var alerts=[];
+  if(S.cur){
+    // 设备断网异常：30天断网≥5次
+    S.devices.filter(function(d){return d.customer_id===S.cur.id&&d.offline_30d>=5;}).forEach(function(d){
+      alerts.push({id:'dev'+d.id,level:d.online?'mid':'hi',icon:'📡',title:'设备断网异常',point:d.code+' · '+d.point_name,
+        basis:'近 30 天断网 '+d.offline_30d+' 次，平均恢复 '+d.avg_offline_min+' 分钟'+(d.online?'':'，当前离线'),
+        action:d.repair_no?('已有维修任务 '+d.repair_no):'建议安排远程巡检或检查网络模块',tab:'设备'});
+    });
+    // 结算逾期风险：未结算且最早账期较早
+    var unsettled=S.settlements.filter(function(s){return s.customer_id===S.cur.id&&s.status==='未结算';});
+    if(unsettled.length){
+      var total=unsettled.reduce(function(s,x){return s+Number(x.amount||0);},0);
+      if(total>=4000)alerts.push({id:'settle',level:'hi',icon:'💰',title:'结算逾期风险',point:S.cur.name,
+        basis:'待结算 ¥'+total.toFixed(2)+'，覆盖 '+unsettled.length+' 个点位，最早未结账期 '+unsettled.map(function(s){return s.oldest_period;}).sort()[0],
+        action:'建议沟通转对公结算并发起对账确认',tab:'结算'});
+    }
+    // 补货缺货
+    var rep=S.reps.filter(function(r){return r.customer_id===S.cur.id;});
+    var pending=rep.filter(function(r){return r.status==='配送中';}).length;
+    if(pending>0||!rep.length)alerts.push({id:'rep',level:rep.length?'lo':'mid',icon:'📦',title:'补货关注',point:S.cur.name,
+      basis:rep.length?('有 '+pending+' 个补货单在途'):'近 30 天无补货记录，可能存在长期缺货',
+      action:rep.length?'留意在途补货单上架情况':'建议核查排面并提交补货需求',tab:'补货'});
+    // 客诉升级：处理中的投诉
+    var openC=S.tickets.filter(function(t){return t.customer_id===S.cur.id&&t.status!=='已完结'&&t.risk!=='咨询';});
+    if(openC.length>=2)alerts.push({id:'cs',level:'mid',icon:'📞',title:'客诉升级风险',point:'未完结投诉 '+openC.length+' 起',
+      basis:'其中 '+openC.filter(function(t){return t.escalate;}).length+' 起已升级；重复投诉将触达舆情风险线',
+      action:'建议合并同类客诉专项跟进，完结后主动回访',tab:'客诉记录'});
+  }
+  // 全局：SLA 临超时工单（二线/管理层视角）
+  var warn=S.tickets.filter(function(t){var l=slaLeft(t);return t.status!=='已完结'&&l<4&&l>-4;});
+  if(warn.length)alerts.push({id:'sla',level:'hi',icon:'⏱',title:'SLA 临超时',point:warn.length+' 张工单',
+    basis:'最紧急：'+warn[0].ticket_no+'（'+warn[0].customer_name+'）',
+    action:'建议立即处理或升级，避免超时',tab:null});
+  return alerts;
+}
+function renderAiBar(){
+  ['aiBar','aiBar2'].forEach(function(id){
+    var bar=$(id);if(!bar)return;
+    var list=aiScan().filter(function(a){return !aiDismissed[a.id];});
+    if(!list.length){bar.className='ai-bar slim';bar.innerHTML='<span class="ai-ico">🤖</span><span class="ai-txt">AI 预判：当前无异常点 ✓</span>';return;}
+    var hi=list.filter(function(a){return a.level==='hi';}).length;
+    if(aiSlim){bar.className='ai-bar slim';bar.innerHTML='<span class="pulse"></span><span class="ai-txt">AI 预判：<b>'+list.length+'</b> 个异常点'+(hi?'（含 <b>'+hi+'</b> 个高风险）':'')+'</span><button onclick="aiSlim=false;renderAiBar()">展开</button>';return;}
+    bar.className='ai-bar';
+    bar.innerHTML='<span class="ai-ico">🤖</span><span class="ai-txt" style="font-weight:600">AI 预判</span>'+
+      list.slice(0,3).map(function(a,idx){
+        var lv={hi:'高风险',mid:'中风险',lo:'关注'}[a.level];
+        return '<span class="ai-alert" onclick="aiDetail('+idx+')" title="'+esc(a.basis)+'"><span class="lv '+a.level+'">'+lv+'</span>'+a.icon+' '+esc(a.title)+' · '+esc(a.point)+'</span>';
+      }).join('')+
+      '<button onclick="aiDismiss()" title="标记已处理">✓ 已处理</button><button onclick="aiSlim=true;renderAiBar()" title="折叠">收起</button>';
+    window._aiList=list;
+  });
+}
+function aiDetail(i){
+  var a=window._aiList[i];if(!a)return;
+  var m=modal('<h3 style="margin-bottom:10px">'+a.icon+' '+esc(a.title)+' <span class="tag tag-'+(a.level==='hi'?'red':'orange')+'">'+({hi:'高风险',mid:'中风险',lo:'关注'}[a.level])+'</span></h3>'+
+    '<div class="kv" style="margin-bottom:6px"><span>位置</span><b>'+esc(a.point)+'</b></div>'+
+    '<div class="alert-orange" style="margin-bottom:8px"><b>判断依据：</b>'+esc(a.basis)+'</div>'+
+    '<div class="alert-blue"><b>处置建议：</b>'+esc(a.action)+'</div>'+
+    '<div style="margin-top:10px;text-align:right">'+(a.tab?'<button class="btn btn-primary btn-sm" id="aiGo">前往'+esc(a.tab)+'模块</button> ':'')+'<button class="btn btn-sm" id="aiOk">知道了</button></div>',520);
+  var g=m.querySelector('#aiGo');if(g)g.onclick=function(){if(S.cur||a.tab==='客诉记录'){if(a.tab&&BIZ_TABS.includes(a.tab)){S.bizTab=a.tab;S.bizTab2=a.tab;renderBiz('bizTabs','bizBody','bizTab');renderBiz('bizTabs2','bizBody2','bizTab2');}}m.remove();switchView(S.views.includes('front')?'front':'second');};
+  m.querySelector('#aiOk').onclick=function(){m.remove();};
+}
+function aiDismiss(){var l=window._aiList||[];l.forEach(function(a){aiDismissed[a.id]=1;});renderAiBar();toast('已标记处理');}
 
 /* ===== 数据加载 ===== */
 async function loadAll(){
@@ -315,6 +459,7 @@ async function loadAll(){
   if($('view-front').classList.contains('on')||S.views.includes('front'))renderFront();
   if(S.views.includes('second')){renderQueue();renderClosureForm();renderCustBrief();renderBiz('bizTabs2','bizBody2','bizTab2');}
   if(S.views.includes('manager')){renderStats();renderMgrTable();}
+  renderAiBar();
 }
 async function reloadTickets(){
   S.tickets=await api('/api/tickets');S.events=await api('/api/ticket_events');S.closures=await api('/api/closures');
@@ -381,10 +526,18 @@ async function rmTag(t){if(!S.cur)return;var tags=tagsOf(S.cur).filter(function(
 
 /* ===== 一线：中栏 8 模块 ===== */
 var BIZ_TABS=['货架','补货','设备','合同','结算','交易','心愿单','客诉记录'];
+function bizTabCount(t){
+  if(!S.cur)return 0;
+  var cid=S.cur.id;
+  var m={'货架':'shelves','设备':'devices','合同':'contracts','结算':'settlements','交易':'trades','补货':'replenishments','心愿单':'wishes'};
+  if(m[t])return S[m[t]].filter(function(x){return x.customer_id===cid;}).length;
+  if(t==='客诉记录')return S.tickets.filter(function(x){return x.customer_id===cid;}).length;
+  return 0;
+}
 function renderBiz(tabsId,bodyId,tabKey){
   var el=$(tabsId||'bizTabs'),bd=$(bodyId||'bizBody'),key=tabKey||'bizTab';
   if(!el)return;
-  el.innerHTML=BIZ_TABS.map(function(t){return '<div class="tab'+(S[key]===t?' on':'')+'" onclick="S.'+key+'=\''+t+'\';renderBiz()">'+t+'</div>';}).join('');
+  el.innerHTML=BIZ_TABS.map(function(t){var c=bizTabCount(t);return '<div class="tab'+(S[key]===t?' on':'')+'" onclick="S.'+key+'=\''+t+'\';renderBiz()">'+t+(c?'<span class="cnt">'+c+'</span>':'')+'</div>';}).join('');
   if(!S.cur){bd.innerHTML='<div class="card"><div class="mini" style="padding:30px 0;text-align:center">搜索客户后展示「'+S[key]+'」模块数据</div></div>';return;}
   var cid=S.cur.id;
   bd.innerHTML='';
@@ -737,16 +890,37 @@ function pickTicket(id){
 /* 悬浮处理窗 */
 function openWin(){
   var t=S.curTicket;
-  if(!t){$('fab').classList.add('hidden');$('wpanel').classList.add('hidden');return;}
+  if(!t){$('fab').classList.add('hidden');$('wpanel').classList.add('hidden');$('fabDot').classList.add('hidden');return;}
+  $('fabDot').classList.add('hidden');
   $('wpanel').classList.remove('hidden');renderWin();
 }
-function closeWin(){$('wpanel').classList.add('hidden');$('fab').classList.remove('hidden');renderFab();}
+function closeWin(){$('wpanel').classList.add('hidden');renderFab();}
+function minWin(){$('wpanel').classList.add('hidden');renderFabDot();}  // 最小化为脉冲球
 function renderFab(){
   var t=S.curTicket,f=$('fab');
-  if(!t||$('wpanel').classList.contains('hidden')){f.classList.add('hidden');return;}
+  if(!t||!$('wpanel').classList.contains('hidden')){f.classList.add('hidden');return;}
   f.classList.remove('hidden');
-  f.innerHTML=esc(t.ticket_no)+' · '+esc(t.status)+'<div class="sla">'+slaHtml(t)+'</div>';
+  f.innerHTML='📋 工单处理 <span class="sla">'+esc(t.ticket_no)+' · '+esc(t.status)+'</span>';
 }
+function renderFabDot(){
+  var t=S.curTicket,d=$('fabDot');
+  if(!t){d.classList.add('hidden');return;}
+  d.classList.remove('hidden');
+  var left=slaLeft(t);
+  $('fabDotSub').textContent=left>0?left.toFixed(1)+'h':'超时'+Math.abs(left).toFixed(1)+'h';
+}
+// 悬浮窗拖动（按住头部）
+(function(){
+  document.addEventListener('mousedown',function(e){
+    var hd=e.target.closest('.wpanel .mhd');if(!hd)return;
+    var win=hd.parentNode,dx=e.clientX-win.offsetLeft,dy=e.clientY-win.offsetTop;
+    win.style.right='auto';win.style.position='fixed';
+    function mv(ev){win.style.left=Math.max(0,ev.clientX-dx)+'px';win.style.top=Math.max(0,ev.clientY-dy)+'px';}
+    function up(){document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);}
+    document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);
+    e.preventDefault();
+  });
+})();
 function renderWin(){
   var t=S.curTicket;if(!t)return;
   var acts=[];
@@ -755,7 +929,7 @@ function renderWin(){
   acts.push(['转派','btn','transferTicket'],['升级','btn','escalateTicket']);
   if(t.status==='处理中')acts.push(['挂起','btn','holdTicket']);
   var cl=S.closures.find(function(c){return c.ticket_id===t.id;});
-  $('wpanel').innerHTML='<div class="mhd"><div><b class="mono">'+esc(t.ticket_no)+'</b> '+statusTag(t.status)+' '+tag(t.risk,'red')+' '+slaHtml(t)+'<div class="mini">创建：'+esc(t.created_at)+' · 建单人：'+esc(t.creator)+'</div></div><span class="link" onclick="closeWin()">✕</span></div>'+
+  $('wpanel').innerHTML='<div class="mhd" style="cursor:move" title="按住可拖动"><div><b class="mono">'+esc(t.ticket_no)+'</b> '+statusTag(t.status)+' '+tag(t.risk,'red')+' '+slaHtml(t)+'<div class="mini">创建：'+esc(t.created_at)+' · 建单人：'+esc(t.creator)+' · 按住此处拖动窗口</div></div><span style="display:flex;gap:6px"><span class="link" onclick="minWin()" title="最小化为悬浮球">—</span><span class="link" onclick="closeWin()" title="收起">✕</span></span></div>'+
     '<div class="mbd">'+
     '<div class="grid4" style="margin-bottom:8px">'+kv('工单分类',esc(t.cat_path))+kv('客户',esc(t.customer_name))+kv('大区',esc(t.region))+kv('关联货架',esc(t.shelf_code))+'</div>'+
     '<div class="alert-orange" style="margin-bottom:8px"><b>客户诉求：</b>'+esc(t.demand||'—')+'</div>'+
@@ -766,6 +940,7 @@ function renderWin(){
     '<div style="display:flex;gap:6px;flex-wrap:wrap">'+acts.map(function(a){return '<button class="btn '+a[1]+' btn-sm" onclick="'+a[2]+'()">'+a[0]+'</button>';}).join('')+'</div>'+
     '</div>';
   renderFab();
+  if($('fabDot')&&!$('fabDot').classList.contains('hidden'))renderFabDot();
 }
 async function actTicket(newStatus,action,detail){
   var t=S.curTicket;if(!t)return;
@@ -861,12 +1036,12 @@ function renderStats(){
   });
   var avg=resp.length?(resp.reduce(function(s,x){return s+x;},0)/resp.length):0;
   el.innerHTML=[
-    ['今日新增',todayNew,'环比昨日 '+(todayNew>=yesterday?'+':'')+(todayNew-yesterday),''],
-    ['待处理',pend.length,'紧急 '+pendUrg+' · 一般 '+(pend.length-pendUrg),''],
+    ['今日新增工单',todayNew,'环比昨日 '+(todayNew>=yesterday?'+':'')+(todayNew-yesterday)],
+    ['待处理',pend.length,'紧急 '+pendUrg+' · 一般 '+(pend.length-pendUrg)],
     ['处理中',doing.length,doingWarn?'⚠ '+doingWarn+' 张临超时':'无临超时',doingWarn?'warn':''],
-    ['今日已完结',doneToday,'完结率 '+(S.tickets.length?Math.round(doneTotal/S.tickets.length*100):0)+'%',''],
+    ['今日已完结',doneToday,'完结率 '+(S.tickets.length?Math.round(doneTotal/S.tickets.length*100):0)+'%'],
     ['平均响应时长',avg.toFixed(1)+'h','目标 ≤ 4h',avg>4?'warn':''],
-  ].map(function(s){return '<div class="stat '+s[3]+'"><div class="n">'+s[1]+'</div><div class="l">'+s[0]+' · '+s[2]+'</div></div>';}).join('');
+  ].map(function(s){return '<div class="stat '+s[3]+'"><div class="n">'+s[1]+'</div><div class="t">'+s[0]+'</div><div class="s">'+s[2]+'</div></div>';}).join('');
 }
 function renderMgrTable(){
   var el=$('mgrTable');if(!el)return;
