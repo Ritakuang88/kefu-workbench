@@ -28,6 +28,7 @@ const SCHEMAS = {
   trades: `id BIGSERIAL PRIMARY KEY, customer_id INT, order_no VARCHAR(60), trade_no VARCHAR(60), merchant_no VARCHAR(80), code VARCHAR(60), shelf_id VARCHAR(60), phone VARCHAR(20), amount NUMERIC(10,2), status VARCHAR(20), source VARCHAR(60), pay_type VARCHAR(20), refunds INT DEFAULT 0, open_time VARCHAR(30), created_time VARCHAR(30), created_at TIMESTAMPTZ DEFAULT now()`,
   replenishments: `id BIGSERIAL PRIMARY KEY, customer_id INT, code VARCHAR(60), point_name VARCHAR(120), replenish_no VARCHAR(60), on_shelf_time VARCHAR(30), amount NUMERIC(10,2), sku_count INT, status VARCHAR(20), created_at TIMESTAMPTZ DEFAULT now()`,
   wishes: `id BIGSERIAL PRIMARY KEY, customer_id INT, code VARCHAR(60), product VARCHAR(120), brand VARCHAR(60), fe_code VARCHAR(40), in_list BOOLEAN DEFAULT true, supply_status VARCHAR(30), report_count INT DEFAULT 0, reporter VARCHAR(60), reporter_phone VARCHAR(20), wish_type VARCHAR(20), qty INT, period INT, created_at TIMESTAMPTZ DEFAULT now()`,
+  supervisions: `id BIGSERIAL PRIMARY KEY, ticket_no VARCHAR(60), customer_id INT, customer_name VARCHAR(120), reason TEXT, dept VARCHAR(60), status VARCHAR(20) DEFAULT '待跟进', next_check VARCHAR(30), ops_log TEXT, created_at TIMESTAMPTZ DEFAULT now()`,
 };
 const BIZ_TABLES = Object.keys(SCHEMAS); // 含 users/seed_meta，RLS 全放行
 

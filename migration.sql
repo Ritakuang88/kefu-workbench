@@ -14,11 +14,12 @@ CREATE TABLE IF NOT EXISTS settlements (id BIGSERIAL PRIMARY KEY, customer_id IN
 CREATE TABLE IF NOT EXISTS trades (id BIGSERIAL PRIMARY KEY, customer_id INT, order_no VARCHAR(60), trade_no VARCHAR(60), merchant_no VARCHAR(80), code VARCHAR(60), shelf_id VARCHAR(60), phone VARCHAR(20), amount NUMERIC(10,2), status VARCHAR(20), source VARCHAR(60), pay_type VARCHAR(20), refunds INT DEFAULT 0, open_time VARCHAR(30), created_time VARCHAR(30), created_at TIMESTAMPTZ DEFAULT now());
 CREATE TABLE IF NOT EXISTS replenishments (id BIGSERIAL PRIMARY KEY, customer_id INT, code VARCHAR(60), point_name VARCHAR(120), replenish_no VARCHAR(60), on_shelf_time VARCHAR(30), amount NUMERIC(10,2), sku_count INT, status VARCHAR(20), created_at TIMESTAMPTZ DEFAULT now());
 CREATE TABLE IF NOT EXISTS wishes (id BIGSERIAL PRIMARY KEY, customer_id INT, code VARCHAR(60), product VARCHAR(120), brand VARCHAR(60), fe_code VARCHAR(40), in_list BOOLEAN DEFAULT true, supply_status VARCHAR(30), report_count INT DEFAULT 0, reporter VARCHAR(60), reporter_phone VARCHAR(20), wish_type VARCHAR(20), qty INT, period INT, created_at TIMESTAMPTZ DEFAULT now());
+CREATE TABLE IF NOT EXISTS supervisions (id BIGSERIAL PRIMARY KEY, ticket_no VARCHAR(60), customer_id INT, customer_name VARCHAR(120), reason TEXT, dept VARCHAR(60), status VARCHAR(20) DEFAULT '待跟进', next_check VARCHAR(30), ops_log TEXT, created_at TIMESTAMPTZ DEFAULT now());
 
 DO $$
 DECLARE t text;
 BEGIN
-  FOREACH t IN ARRAY ARRAY['users','seed_meta','tickets','ticket_events','closures','customers','categories','shelves','devices','contracts','settlements','trades','replenishments','wishes']
+  FOREACH t IN ARRAY ARRAY['users','seed_meta','tickets','ticket_events','closures','customers','categories','shelves','devices','contracts','settlements','trades','replenishments','wishes','supervisions']
   LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = t AND policyname = 'wb_all_' || t) THEN
@@ -28,10 +29,10 @@ BEGIN
 END $$;
 
 -- 演示账号（请上线后立即改密）
-INSERT INTO users (id, username, password_hash, nick, role, status, permissions) VALUES (1, 'admin', '4a4d0f8e5add3a332a24303b012104b7:7bf6c628d356d5090966d62d49ea7bae23f53a58a78a8d77866d04c5530922433b7edb13731ce7356b38fce505d3c9e5386e3e603ee383c16e6ec0bb61cd12fd', '管理员（管理层）', 'admin', 'approved', '[]') ON CONFLICT (username) DO NOTHING;
-INSERT INTO users (id, username, password_hash, nick, role, status, permissions) VALUES (2, 'agent01', 'f2ab392256f742603ced8e1770591fa5:fa5370ea7042ce32b7ba0f50c2aa23eee262c3675e301767163d58f4a042665be652ed70008985d97a33d0ae23d6909812109a8a53c7439804fdb393c3712d10', '小艾（一线客服）', 'agent', 'approved', '[]') ON CONFLICT (username) DO NOTHING;
-INSERT INTO users (id, username, password_hash, nick, role, status, permissions) VALUES (3, 'agent02', '1ee7726b43bbb128ffdeeb9c93c5d98b:034bc8bde6a64b4c8c8b5e278763f66bb2603f5e4c1e201e283474dc019ca199bc1d49721e8cc75c2982059971592e1f56d301bd83c15f0cbf6580d3c3ab4860', '小李（一线客服）', 'agent', 'approved', '["second"]') ON CONFLICT (username) DO NOTHING;
-INSERT INTO users (id, username, password_hash, nick, role, status, permissions) VALUES (4, 'handler01', '08913613ca5693b177445a756e50a759:98bc36174076a0173fc9877ee55eac2ba5a7c832041a042e6b2610b6ea7718f9cd5a9f7a9308dd655eb9cdc26c98e0c8f963cd7493594f05ac44f62798aaf587', '小何（二线工单）', 'handler', 'approved', '["front"]') ON CONFLICT (username) DO NOTHING;
+INSERT INTO users (id, username, password_hash, nick, role, status, permissions) VALUES (1, 'admin', '080afe5380b944953c6734a4f9d2dd07:ddc8896cd2a6007ef071abcb3d0e072c6a699cf95875ebbd4615ed1672a01b57880d6a3a105eb11e696fa4b0857f9818db4162ce3c077eaf00fc53eed197defc', '管理员（管理层）', 'admin', 'approved', '[]') ON CONFLICT (username) DO NOTHING;
+INSERT INTO users (id, username, password_hash, nick, role, status, permissions) VALUES (2, 'agent01', '9201e4079df07a63918a4924ddd1eeb7:e6e30fb16554066394f762ff8de0ff73601143b3f7f186f18ac4fbbd2f5b56014897eb81accadedef7e447d1f8c8d45e3851c87f319580f07c56c0bff868348f', '小艾（一线客服）', 'agent', 'approved', '[]') ON CONFLICT (username) DO NOTHING;
+INSERT INTO users (id, username, password_hash, nick, role, status, permissions) VALUES (3, 'agent02', '7392323a2ef5713f476ca94211e611a0:9d584ab99d3d2b3faad2ac8fd15903efbccec18bc3125c8526d166603b7d6e30bdbbceefd40feac0ffa81a78c8cb881d53bb746f0b440c39b009baaae26a624a', '小李（一线客服）', 'agent', 'approved', '["second"]') ON CONFLICT (username) DO NOTHING;
+INSERT INTO users (id, username, password_hash, nick, role, status, permissions) VALUES (4, 'handler01', 'e7ba458083f38c6e91de780d74a69cde:d4403625b5b093d68e8636694e3aafa7c43ecccf47a04cd02ad62ab88e497c53de478efb5e2e7f3b120eafcdf526740732da6fc7afdff9708526815b1d839f3a', '小何（二线工单）', 'handler', 'approved', '["front"]') ON CONFLICT (username) DO NOTHING;
 
 -- 业务演示种子（重复执行会重置为初始演示数据）
 DELETE FROM customers;
