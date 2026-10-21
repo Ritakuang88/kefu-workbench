@@ -7,26 +7,28 @@
 <style>
 :root{--brand:#2f7bff;--brand-l:#eef4ff;--brand-d:#1d5fd6;--ink:#1f2329;--sub:#646a73;--line:#e5e6eb;--bg:#f5f6f8;--card:#ffffff;--red:#f53f3f;--orange:#ff7d00;--green:#00b42a;--gray-l:#f7f8fa;--r:6px;--shadow:0 1px 2px rgba(0,0,0,.04)}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;font-size:14px;color:var(--ink);background:var(--bg)}
+body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;font-size:14px;line-height:1.6;color:var(--ink);background:var(--bg)}
 .hidden{display:none!important}
 button{font-family:inherit;cursor:pointer}
-input,select,textarea{font-family:inherit;font-size:13px;border:1px solid var(--line);border-radius:6px;padding:6px 9px;background:#fff;color:var(--ink)}
+input,select,textarea{font-family:inherit;font-size:13.5px;border:1px solid var(--line);border-radius:6px;padding:7px 10px;background:#fff;color:var(--ink);min-height:34px}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brand)}
-.btn{border:1px solid var(--line);background:#fff;border-radius:6px;padding:6px 14px;font-size:13px}
+.btn{border:1px solid var(--line);background:#fff;border-radius:6px;padding:6px 14px;font-size:13.5px;min-height:32px}
+.btn-lg{min-height:38px;padding:8px 20px;font-size:14.5px;font-weight:700}
 .btn:hover{border-color:var(--brand);color:var(--brand)}
 .btn-primary{background:var(--brand);border-color:var(--brand);color:#fff}
 .btn-primary:hover{background:var(--brand-d);color:#fff}
 .btn-sm{padding:3px 10px;font-size:12.5px}
 .btn-danger{background:var(--red);border-color:var(--red);color:#fff}
 .tag{display:inline-block;border-radius:4px;padding:1px 8px;font-size:12px;font-weight:600;white-space:nowrap}
-.tag-blue{background:#eef4ff;color:#1d5fd6}.tag-green{background:#dcfce7;color:#15803d}.tag-orange{background:#ffedd5;color:#c2410c}.tag-red{background:#fee2e2;color:#b91c1c}.tag-gray{background:#f3f4f6;color:#4b5563}
+.tag-blue{background:#eef4ff;color:#1d5fd6}.tag-green{background:#e8f7ee;color:#0a8a3e}.tag-orange{background:#fff3e8;color:#d46b08}.tag-red{background:#ffece8;color:#d4380d}.tag-gray{background:#f2f3f5;color:#4e5969}
 .chip{display:inline-block;border:1px solid var(--line);border-radius:14px;padding:2px 10px;font-size:12.5px;background:#fff;cursor:pointer;margin:2px}
 .chip.on{background:var(--brand);border-color:var(--brand);color:#fff}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;margin-bottom:10px}
-.card h3{font-size:13.5px;margin-bottom:8px;color:var(--ink);display:flex;align-items:center;gap:6px}
+.card h3{font-size:15px;font-weight:700;margin-bottom:10px;color:var(--ink);display:flex;align-items:center;gap:6px;border-left:3px solid var(--brand);padding-left:8px;line-height:1.4}
 table.tbl{width:100%;border-collapse:collapse;font-size:12.5px;background:#fff}
-table.tbl th{background:var(--gray-l);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;font-weight:600}
-table.tbl td{padding:6px 8px;border-bottom:1px solid #f1f2f4;white-space:nowrap}
+table.tbl th{background:#fafbfc;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap;font-weight:600;font-size:13px;position:sticky;top:0;z-index:2}
+table.tbl td{padding:8px 10px;border-bottom:1px solid #f1f2f4;white-space:nowrap;font-size:13px}
+table.tbl tbody tr:nth-child(even) td{background:#fafbfc}
 table.tbl tr:hover td{background:#fafbfc}
 .mono{font-family:Consolas,monospace}
 .link{color:var(--brand);cursor:pointer;text-decoration:none}
@@ -57,7 +59,7 @@ table.tbl tr:hover td{background:#fafbfc}
 /* 一线三栏 */
 .cols{display:grid;grid-template-columns:290px 1fr 340px;gap:10px;padding:10px 12px;align-items:start}
 @media(max-width:1280px){.cols{grid-template-columns:260px 1fr 320px}}
-.kv{display:flex;justify-content:space-between;font-size:12.5px;padding:3px 0;gap:8px}
+.kv{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;gap:8px}
 .kv b{font-weight:600;color:var(--ink);text-align:right;word-break:break-all}
 .kv span{color:var(--sub);flex-shrink:0}
 .sec-title{font-size:12px;color:var(--sub);font-weight:600;margin:10px 0 4px;border-top:1px dashed var(--line);padding-top:8px}
@@ -82,6 +84,18 @@ table.tbl tr:hover td{background:#fafbfc}
 .catitem{padding:9px 11px;font-size:13.5px;line-height:1.4;cursor:pointer}
 .catitem:hover{background:var(--brand-l)}
 .catitem.on{background:var(--brand);color:#fff;font-weight:700}
+.steps .tl{padding-left:0}
+.steps .tl-item{background:#fff;border:1px solid var(--line);border-radius:8px;margin-bottom:10px;padding:0;list-style:none}
+.steps .tl-item::before{display:none}
+.steps .tl-hd{padding:10px 14px;background:#fafbfc;border-bottom:1px solid var(--line);font-size:14px;font-weight:700;border-radius:8px 8px 0 0;color:var(--ink)}
+.steps .tl-bd{padding:12px 14px;background:transparent;font-size:13px}
+.steps .kv{font-size:13px;padding:4px 0}
+details.card{padding:0}
+details.card>summary{padding:12px 14px;font-weight:700;font-size:14px;cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px}
+details.card>summary::-webkit-details-marker{display:none}
+details.card>summary::before{content:'▸';color:var(--brand);transition:transform .15s}
+details.card[open]>summary::before{transform:rotate(90deg)}
+details.card>.det-bd{padding:0 14px 14px}
 /* 弹窗 */
 .mask{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:60;display:flex;align-items:center;justify-content:center;padding:24px}
 .modal{background:#fff;border-radius:12px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.3)}
@@ -114,7 +128,7 @@ table.tbl tr:hover td{background:#fafbfc}
 .wpanel .mbd{overflow-y:auto;padding:12px 14px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.mini{font-size:11.5px;color:var(--sub)}
+.mini{font-size:12.5px;color:var(--sub);line-height:1.6}
 .alert-orange{background:#fff7ed;border:1px solid #fdba74;color:#9a3412;border-radius:8px;padding:8px 10px;font-size:12.5px}
 .alert-blue{background:var(--brand-l);border:1px solid #bfdbfe;color:var(--brand-d);border-radius:8px;padding:8px 10px;font-size:12.5px}
 .toast{position:fixed;top:18px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:9px 20px;border-radius:8px;font-size:13px;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,.3)}
@@ -217,7 +231,7 @@ iframe.calcframe{width:100%;height:calc(100vh - 52px);border:none;background:#ff
             <textarea id="aiText" rows="6" placeholder="粘贴或输入客户的投诉原话，AI 将自动识别 → 查库 → 匹配 SOP → 预填工单（全部字段可人工修改）→ 确认创建" style="width:100%"></textarea>
             <div class="fld" style="margin-top:8px"><label>关联客户（AI 将真实查询该客户数据）</label><select id="aiCust"></select></div>
             <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
-              <button class="btn btn-primary" id="aiGoBtn" onclick="runAiAnalyze()">🚀 开始 AI 分析</button>
+              <button class="btn btn-primary btn-lg" style="width:100%" id="aiGoBtn" onclick="runAiAnalyze()">🚀 开始 AI 分析</button>
               <span class="mini" id="aiMode"></span>
             </div>
           </div>
@@ -225,15 +239,13 @@ iframe.calcframe{width:100%;height:calc(100vh - 52px);border:none;background:#ff
             <h3>🎬 体验 Agent 完整工作流</h3>
             <div id="aiCases"></div>
           </div>
-          <div class="card" style="padding:12px">
-            <h3>⏱ 耗时与节省（剔时表 5-6 月口径）</h3>
+          <details class="card" style="margin-bottom:10px"><summary>⏱ 耗时与节省（剔时表 5-6 月口径 · 点击展开）</summary><div class="det-bd" style="padding-top:8px">
             <div class="mini" style="line-height:1.9">
               视频复核额外耗时：<span id="tsVideo"></span><br>
               质量预处理：<span id="tsPre"></span><br>
               质量单+售后退款：<span id="tsQual"></span><br>
               <div class="alert-blue" style="margin-top:6px">工作台优化后预估节省（保守口径：视频复核省 50%、质量类省 30%）：<b id="tsSave"></b><div class="mini" style="margin-top:2px">估算口径，非实测；统计由程序对剔时表逐行计算</div></div>
-              <div id="tsTable" style="margin-top:8px"></div>
-            </div>
+              <div id="tsTable" style="margin-top:8px"></div></div></details>
           </div>
         </div>
         <div id="aiResult"><div class="card"><div class="mini" style="padding:40px 0;text-align:center">输入投诉或点选案例后，这里将展示 Agent 的完整处理过程：<br>正在做什么 → 调用了什么工具 → 查到什么事实 → 依据什么规则 → 建议什么动作</div></div></div>
@@ -244,7 +256,7 @@ iframe.calcframe{width:100%;height:calc(100vh - 52px);border:none;background:#ff
     <section class="view" id="view-front">
       <div class="topbar">
         <h2><span class="logo-dot"></span>AI 智能客服工作台</h2><span class="slogan">— 解决客诉流程的信息断层和协同效率问题</span>
-        <div class="role-switch" id="roleSwitch"></div>
+        
         <select id="sType" style="max-width:110px"><option>手机号</option><option>客户ID</option><option>货架编码</option><option>售后订单号</option></select>
         <input id="sKey" placeholder="输入后回车查询，三栏同步刷新" style="flex:1;min-width:180px" onkeydown="if(event.key==='Enter')doSearch()">
         <button class="btn" onclick="doSearch()">搜索</button>
@@ -279,7 +291,7 @@ iframe.calcframe{width:100%;height:calc(100vh - 52px);border:none;background:#ff
     <section class="view" id="view-second">
       <div class="topbar">
         <h2><span class="logo-dot"></span>AI 智能客服工作台</h2><span class="slogan">— 解决客诉流程的信息断层和协同效率问题</span>
-        <div class="role-switch" id="roleSwitch2"></div>
+        
         <span style="font-size:12.5px;color:rgba(255,255,255,.75);margin-left:auto">受理队列 → 点选工单弹出处理窗；中栏可直接查询业务模块；右栏录入理赔闭环</span>
         <button class="btn btn-sm" onclick="loadAll()">🔄 刷新</button>
       </div>
@@ -311,7 +323,7 @@ iframe.calcframe{width:100%;height:calc(100vh - 52px);border:none;background:#ff
     <section class="view" id="view-manager">
       <div class="topbar">
         <h2><span class="logo-dot"></span>AI 智能客服工作台</h2><span class="slogan">— 解决客诉流程的信息断层和协同效率问题</span>
-        <div class="role-switch" id="roleSwitch3"></div>
+        
         <span style="font-size:12.5px;color:rgba(255,255,255,.75);margin-left:auto">只读视图，处理操作请到二线工作台</span>
       </div>
       <div class="statgrid" id="stats"></div>
@@ -429,7 +441,7 @@ function switchView(v){
 }
 /* 顶栏角色切换器（按权限渲染，跨视图常驻） */
 var ROLE_TABS=[['ai','AI 处理'],['front','一线客服'],['second','二线工单'],['manager','管理层'],['calc','理赔计算器']];
-function renderRoleSwitch(){
+function renderRoleSwitch(){return;
   ROLE_TABS.forEach(function(rt){
     var v=rt[0];
     ['roleSwitch','roleSwitch2','roleSwitch3'].forEach(function(id){
@@ -656,14 +668,14 @@ function renderAiResult(r,pf){
     (pf&&pf.hints&&pf.hints.needVideo?'<div class="alert-orange" style="margin-bottom:8px">📹 需视频复核（人工平均 20-30 分钟/单 → AI 辅助约 8 分钟）'+(pf.hints.order?('｜已自动带出最近订单：<b class="mono">'+esc(pf.hints.order.no)+'</b> 开门 '+esc(pf.hints.order.open_time||'')):'')+'<div style="margin-top:6px"><b>复核清单：</b>'+(pf.hints.videoChecklist||[]).map(function(v){return '<span class="chip" style="cursor:default">'+esc(v)+'</span>';}).join('')+'</div><div style="margin-top:6px"><button class="btn btn-sm" onclick="genVideoConclusion()">📹 一键生成视频复核结论（写入工单内容）</button></div></div>'+renderVideoTimeline(window._caseFields&&window._caseFields.video, pf.hints.order):'')+
     (pf&&pf.hints&&pf.hints.missing&&pf.hints.missing.length?'<div class="alert-orange" style="margin-bottom:8px">⚠ 还需向客户核实：'+esc(pf.hints.missing.join('、'))+'</div>':'')+
     '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
-    '<button class="btn btn-primary btn-sm" id="aiActTicket" onclick="aiCreateTicket()">✔ 人工确认 · 创建工单（真实写入）</button>'+
+    '<button class="btn btn-primary btn-lg" id="aiActTicket" onclick="aiCreateTicket()">✔ 人工确认 · 创建工单（真实写入）</button>'+
     '<button class="btn btn-sm" id="aiActUrge" onclick="aiUrge()">生成催办</button>'+
     '<button class="btn btn-sm" id="aiActSup" onclick="aiSupervise()">创建督办任务</button>'+
     '<button class="btn btn-sm" onclick="aiCopyReply()">复制客服回复</button>'+
     '</div><div class="mini" id="aiActLog" style="margin-top:6px">高风险动作（赔付/退款/关单）需人工在工单中另行审批，AI 不自行执行</div></div></div>';
   html+='</div>';
   window._aiLast=r;window._aiPrefill=pf;
-  $('aiResult').innerHTML=html;
+  $('aiResult').innerHTML='<div class="steps">'+html+'</div>';
 }
 function text0Safe(){return ($('aiText').value||'').slice(0,120);}
 async function aiCreateTicket(){
@@ -981,7 +993,7 @@ function renderContracts(el,cid){
       '<div style="margin-top:8px;display:flex;gap:8px"><button class="btn btn-sm btn-primary" onclick="toast(\'下载带签章 PDF（演示）\')">⬇ 下载合同</button><button class="btn btn-sm" onclick="toast(\'签章详情（演示）\')">查看签章详情</button></div></div>';
   }else html+='<div class="card"><div class="mini">暂无合同记录</div></div>';
   html+='<div class="card"><h3>历史合同</h3>'+tbl(['编号','名称','期限','状态','操作'],hist.map(function(c){return [mono(c.contract_no),esc(c.name),'至 '+esc(c.term_end),tag(c.seal_status,sealTag[c.seal_status]||'gray'),'<span class="link" onclick="toast(\'下载（演示）\')">下载</span>'];}))+'</div>';
-  el.innerHTML=html;
+  el.innerHTML='<div class="steps">'+html+'</div>';
 }
 function renderSettle(el,cid){
   var rows=S.settlements.filter(function(s){return s.customer_id===cid;});
@@ -1136,7 +1148,7 @@ function renderTicketForm(){
     return '<div class="form-grp" id="grp-'+grp.g.charAt(0)+'"><div class="grp-hd" onclick="this.parentNode.classList.toggle(\'closed\')"><span>'+esc(grp.g)+'</span><span class="grp-badge"></span></div><div class="grp-bd">'+
       grp.fields.map(function(f){return fldHtml(f);}).join('')+'</div></div>';
   }).join('');
-  $('ticketForm').innerHTML=html;
+  $('ticketForm').innerHTML='<div class="steps">'+html+'</div>';
   updateFormProg();
 }
 function fldHtml(f){
@@ -1218,7 +1230,7 @@ function renderCatCascader(){
   html+='<div class="catcol">'+l2s.map(function(b){return '<div class="catitem'+(catSel.l2===b?' on':'')+'" onclick="catSel.l2=\''+esc(b)+'\';renderCatCascader()">'+esc(b)+'</div>';}).join('')+'</div>';
   var l3s=(tree[catSel.l1]&&tree[catSel.l1][catSel.l2])||[];
   html+='<div class="catcol">'+l3s.map(function(x){return '<div class="catitem" onclick="pickCat(\''+esc(x.path)+'\')">'+esc(x.leaf)+'</div>';}).join('')+'</div>';
-  $('catCols').innerHTML=html;
+  $('catCols').innerHTML='<div class="steps">'+html+'</div>';
 }
 function catSearch(kw){
   kw=kw.trim();
