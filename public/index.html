@@ -1319,7 +1319,14 @@ async function renderDataBrowser(){
 }
 
 /* ===== 启动 ===== */
-api('/api/me').then(boot).catch(function(){showLogin();});
+/* 启动：免登录直开。/api/me 失败（冷启动/网络抖动）自动重试，最终兜底以访客进入，不弹登录框 */
+(function bootGuest(retries){
+  api('/api/me').then(boot).catch(function(err){
+    if(retries>0){setTimeout(function(){bootGuest(retries-1);},1200);return;}
+    // 兜底：服务器不可达也先进入工作台界面（数据加载失败会显示空态，网络恢复后刷新即可）
+    boot({user:{id:0,username:'guest',name:'访客',role:'admin',permissions:[]},allowed_views:['ai','front','second','manager','calc','users','data']}).catch(function(){});
+  });
+})(3);
 </script>
 </body>
 </html>
