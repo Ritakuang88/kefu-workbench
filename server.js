@@ -8,7 +8,7 @@ const path = require('path');
 const crypto = require('crypto');
 
 /* ============ CONFIG（唯一需要改的区域） ============ */
-const APP_NAME = '客服工作台';
+const APP_NAME = 'AI 智能客服工作台';
 
 // 业务表白名单：name=表名 views=可访问视图(权限门卫用，任一命中即可) columns=读写白名单 order=列表排序
 const TABLES = [
@@ -28,10 +28,12 @@ const TABLES = [
   { name: 'replenishments', views: ['front', 'second'], columns: ['id', 'customer_id', 'code', 'point_name', 'replenish_no', 'on_shelf_time', 'amount', 'sku_count', 'status', 'created_at'], order: 'id.desc' },
   // —— 心愿单提报（可写） ——
   { name: 'wishes', views: ['front', 'second'], columns: ['id', 'customer_id', 'code', 'product', 'brand', 'fe_code', 'in_list', 'supply_status', 'report_count', 'reporter', 'reporter_phone', 'wish_type', 'qty', 'period', 'created_at'], order: 'id.desc' },
+  // —— AI 督办任务（人工确认后真实落库） ——
+  { name: 'supervisions', views: ['front', 'second', 'manager'], columns: ['id', 'ticket_no', 'customer_id', 'customer_name', 'reason', 'dept', 'status', 'next_check', 'ops_log', 'created_at'], order: 'id.desc' },
 ];
 
 // 视图：front=一线工作台 second=二线工作台 manager=管理层 calc=理赔计算器(静态)
-const ALL_VIEWS = ['front', 'second', 'manager', 'calc'];
+const ALL_VIEWS = ['front', 'second', 'manager', 'calc', 'ai'];
 // API 前缀 → 需要的视图（数组=任一视图命中即可访问）
 const VIEW_API_PREFIX = {};
 TABLES.forEach(t => { VIEW_API_PREFIX[t.name] = t.views; });
@@ -40,11 +42,11 @@ TABLES.forEach(t => { VIEW_API_PREFIX[t.name] = t.views; });
 const ADMIN_ONLY_PATHS = ['/api/users', '/api/admin'];
 // 角色 → 默认视图；member 可被 admin 追加授权的视图
 const DEFAULT_VIEWS_BY_ROLE = {
-  agent: ['front', 'calc'],      // 一线客服
-  handler: ['second', 'calc'],   // 二线工单
-  member: ['front', 'calc'],     // 兼容默认注册角色
+  agent: ['front', 'ai', 'calc'],      // 一线客服
+  handler: ['second', 'ai', 'calc'],   // 二线工单
+  member: ['front', 'ai', 'calc'],     // 兼容默认注册角色
 };
-const GRANTABLE_VIEWS = ['front', 'second', 'calc', 'manager'];
+const GRANTABLE_VIEWS = ['front', 'second', 'calc', 'manager', 'ai'];
 const VALID_ROLES = ['admin', 'agent', 'handler', 'member'];
 
 /* ============ 以下勿动 ============ */
@@ -131,8 +133,13 @@ const server = http.createServer(async (req, res) => {
   // session 解析
   const cookies = {}; (req.headers.cookie || '').split(/;\s*/).forEach(kv => { const i = kv.indexOf('='); if (i > 0) cookies[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1)); });
   const sess = verify(cookies[COOKIE]);
-  const me = sess ? { id: sess.uid, username: sess.username, name: sess.name, role: sess.role, permissions: sess.permissions || [] } : null;
+  let me = sess ? { id: sess.uid, username: sess.username, name: sess.name, role: sess.role, permissions: sess.permissions || [] } : null;
   const setCookie = payload => res.setHeader('Set-Cookie', `${COOKIE}=${encodeURIComponent(sign({ ...payload, exp: Date.now() + TTL }))}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${TTL / 1000}`);
+  // —— 免登录直开：无会话时自动以访客身份（全功能）进入，公网链接点开即用 ——
+  if (!me) {
+    me = { id: 0, username: 'guest', name: '访客', role: 'admin', permissions: [] };
+    setCookie({ uid: 0, username: 'guest', name: '访客', role: 'admin', permissions: [] });
+  }
 
   try {
     // ---- 静态 ----
@@ -206,6 +213,155 @@ const server = http.createServer(async (req, res) => {
         }
         return ok(res, out);
       }
+
+      // ================= AI 智能处理引擎 =================
+      // 演示 SOP 规则库（虚构演示规则，非真实企业 SOP）
+      const SOPS = {
+        '设备故障': { id: 'SOP-DEV-001', ver: 'v1.0-2026.10', name: '设备故障处理SOP', cond: '客户反馈货架无法使用/断网/离线',
+          verify: ['设备在线状态与断网频次（7天/30天）', '是否存在在途维修工单', '是否已有撤架任务'],
+          canDo: ['安抚客户并告知核查进度', '创建设备故障工单', '查询维修工单进度'],
+          needApproval: ['换架/撤架流程', '赔付类动作'],
+          escalate: '30 天断网 ≥5 次或维修中再次报障 → 升级设备主管并安排上门' },
+        '补货异常': { id: 'SOP-REP-001', ver: 'v1.0-2026.10', name: '补货异常处理SOP', cond: '客户反馈缺货/长期未补/催补未响应',
+          verify: ['近 30 天补货频次与在途单', '近 7 天催补货次数', '当前库存与缺货 SKU'],
+          canDo: ['提交补货需求（含风险标签）', '对在途补货单发起催办'],
+          needApproval: ['加急补货（超出常规频次）'],
+          escalate: '催补 ≥2 次未响应 → 升级补货运营主管' },
+        '商品质量': { id: 'SOP-QUAL-001', ver: 'v1.0-2026.10', name: '商品质量处理SOP', cond: '过期/变质/异物/破损等质量问题',
+          verify: ['订单编号与支付记录', '商品生产日期（实物凭证）', '异常是否肉眼可见'],
+          canDo: ['原路退款 ≤ ¥200（客服权限内）', '安抚并登记理赔闭环'],
+          needApproval: ['赔付金额 > ¥200', '食用致害类需主管决策'],
+          escalate: '食用致害/重大质量 → 升级主管+客户关怀流程' },
+        '退款异常': { id: 'SOP-REF-001', ver: 'v1.0-2026.10', name: '退款异常处理SOP', cond: '扣款未出货/多扣/退款未到账',
+          verify: ['订单状态与开门记录', '退款记录笔数与到账状态'],
+          canDo: ['未出货扣款直接原路退款', '查询退款进度并答复'],
+          needApproval: ['退款金额 > ¥500'],
+          escalate: '重复扣款 3 次以上 → 升级技术排查' },
+        '重复投诉升级': { id: 'SOP-ESC-001', ver: 'v1.0-2026.10', name: '重复投诉升级SOP', cond: '系统核验 30 天内同类工单 ≥2',
+          verify: ['历史同类工单处理结果', '上次承诺与兑现情况'],
+          canDo: ['致歉并优先处理', '创建督办任务闭环跟进'],
+          needApproval: ['赔付方案'],
+          escalate: '二次重复投诉 → 主管介入+完结后主动回访' },
+      };
+      const LLM_MODE = () => process.env.DASHSCOPE_API_KEY ? '千问大模型增强' : '演示模式·规则引擎（未配置 DASHSCOPE_API_KEY，识别/查库/SOP 全部真实执行，叙述部分由规则模板生成）';
+
+      if (p === '/api/ai/analyze' && req.method === 'POST') {
+        const body = await readBody(req);
+        const text = String(body.text || '').trim();
+        const custId = Number(body.customer_id || 0);
+        if (!text) return bad(res, 400, '请输入客户投诉内容');
+        // —— 第 1 步：智能识别（规则引擎，确定性输出） ——
+        const isQual = /过期|变质|异物|发霉|质量|坏掉|破损/.test(text);
+        const isRep = /补货|没货|缺货|空了|断货|上架|没有人来补/.test(text);
+        const isDev = /断网|离线|用不了|不能用|故障|维修|重启|开不了|机器坏|坏了/.test(text);
+        const isRef = /退款|退钱|扣了钱|多扣|退回|扣款/.test(text);
+        const type = isQual ? '商品质量' : isDev && !isQual ? '设备故障' : isRep ? '补货异常' : isRef ? '退款异常' : '其他咨询';
+        const selfRepeat = /上次|上周|已经催|又一次|再次|每次|一直|还/.test(text);  // 客户自述曾投诉
+        const angry = /投诉|曝光|工商|12315|媒体|举报|差评|受不了/.test(text);
+        const severity = angry ? '较高' : selfRepeat ? '中' : '一般';
+        const missing = [];
+        if (type === '商品质量' && !/订单|买的|购买/.test(text)) missing.push('订单编号');
+        if (type === '商品质量' && !/生产日期|日期/.test(text)) missing.push('商品生产日期');
+        if (type === '退款异常' && !/订单|扣了|金额|元/.test(text)) missing.push('订单编号与扣款金额');
+        if (type === '设备故障' && !/货架|A\d{6}|点位|柜/.test(text)) missing.push('具体货架编码或点位');
+        const classify = { type, demand: text.slice(0, 60), emotion: angry ? '愤怒/威胁外投' : selfRepeat ? '不满/失去耐心' : '一般',
+          severity, selfRepeat, angry, missing, crossDept: type !== '其他咨询' };
+        // —— 第 2 步：自主查询业务信息（真实读取数据库，非 AI 编造） ——
+        const tools = [];
+        let cust = null, tks = [], devs = [], reps = [], trds = [], cls = [];
+        if (custId) {
+          try { cust = (await sb('GET', 'customers', { select: '*', filters: [['id', 'eq.' + custId]] }))[0] || null; } catch {}
+          try { tks = await sb('GET', 'tickets', { select: '*', filters: [['customer_id', 'eq.' + custId]], order: 'created_at.desc', limit: 100 }); } catch {}
+          try { devs = await sb('GET', 'devices', { select: '*', filters: [['customer_id', 'eq.' + custId]] }); } catch {}
+          try { reps = await sb('GET', 'replenishments', { select: '*', filters: [['customer_id', 'eq.' + custId]], order: 'id.desc', limit: 20 }); } catch {}
+          try { trds = await sb('GET', 'trades', { select: '*', filters: [['customer_id', 'eq.' + custId]], order: 'id.desc', limit: 20 }); } catch {}
+          try { cls = await sb('GET', 'closures', { select: '*', order: 'id.desc', limit: 100 }); } catch {}
+        }
+        const tkIds = new Set(tks.map(t => t.id));
+        const myCls = cls.filter(c => tkIds.has(c.ticket_id));
+        if (cust) tools.push({ tool: 'get_customer_profile', ok: true, summary: `${cust.name}（${cust.level}，${cust.region}），近90天消费 ¥${Number(cust.spend_90d || 0).toFixed(2)}，历史售后 ${cust.after_sales_90d} 笔` });
+        if (devs.length) {
+          const off = devs.filter(d => !d.online);
+          tools.push({ tool: 'get_equipment_status', ok: true, summary: `名下设备 ${devs.length} 台，离线 ${off.length} 台` + (off[0] ? `；${off[0].code} 近30天断网 ${off[0].offline_30d} 次、平均恢复 ${off[0].avg_offline_min} 分钟${off[0].repair_no ? `、维修工单 ${off[0].repair_no} 在途` : '、无在途维修工单'}` : '') });
+        } else tools.push({ tool: 'get_equipment_status', ok: true, summary: '该客户名下无设备记录' });
+        if (tks.length) {
+          const open = tks.filter(t => t.status !== '已完结');
+          const kw = { '设备故障': '断网', '补货异常': '补货', '商品质量': '过期|质量|破损', '退款异常': '退款' }[type] || '';
+          const similar = kw ? tks.filter(t => new RegExp(kw).test(String(t.cat_path || ''))) : [];
+          const days30 = similar.filter(t => (Date.now() - new Date(String(t.created_at).replace(' ', 'T')).getTime()) < 30 * 864e5);
+          tools.push({ tool: 'get_ticket_history', ok: true, summary: `历史工单 ${tks.length} 张，未完结 ${open.length} 张；30 天内同类（${type}）工单 ${days30.length} 张${similar[0] ? '，最近同类单 ' + similar[0].ticket_no + '（' + similar[0].status + '）' : ''}` });
+          classify.sysRepeat = days30.length >= 1;  // 系统核验的重复投诉（区别于客户自述）
+          classify.similarTickets = days30.map(t => t.ticket_no);
+        } else { tools.push({ tool: 'get_ticket_history', ok: true, summary: '该客户无历史工单' }); classify.sysRepeat = false; }
+        if (reps.length) tools.push({ tool: 'get_restocking_history', ok: true, summary: `近 30 天补货 ${reps.length} 次，在途 ${reps.filter(r => r.status !== '已上架').length} 单` + (reps[0] ? `，最近一单 ${reps[0].replenish_no}（${reps[0].status}，¥${Number(reps[0].amount).toFixed(2)}）` : '') });
+        if (trds.length) tools.push({ tool: 'get_order_details', ok: true, summary: `最近订单 ${trds[0].order_no}（${trds[0].status}，¥${Number(trds[0].amount).toFixed(2)}），含退款记录 ${trds.reduce((s, t) => s + (t.refunds || 0), 0)} 笔` });
+        if (myCls.length) tools.push({ tool: 'get_closure_history', ok: true, summary: `历史理赔闭环 ${myCls.length} 条，最近：${myCls[0].problem}，退款 ¥${Number(myCls[0].refund_amount || 0).toFixed(2)} + 赔付 ¥${Number(myCls[0].pay_amount || 0).toFixed(2)}` });
+        // —— 第 3 步：SOP 智能匹配 ——
+        const sops = [SOPS[type]].filter(Boolean);
+        if (classify.sysRepeat || (selfRepeat && classify.similarTickets)) sops.push(SOPS['重复投诉升级']);
+        const sopMatch = sops.map(s => ({ ...s, hit: true, note: '命中：' + s.cond }));
+        if (!sopMatch.length) sopMatch.push({ id: null, note: '未找到可靠的处理依据，需要人工判断（严禁编造赔付规定与服务承诺）' });
+        // —— 第 4 步：生成处理方案（区分已核实事实 / AI推测 / 待核实 / 建议动作） ——
+        const facts = tools.map(t => t.summary);
+        const inferred = [];
+        if (type === '设备故障') { inferred.push('客户设备故障大概率与断网/硬件相关，需优先核实离线设备与维修工单状态'); if (classify.sysRepeat) inferred.push('系统核验存在 30 天内同类工单，符合重复投诉升级条件'); }
+        if (type === '补货异常') inferred.push('缺货可能与补货频次不足或在途配送延迟相关，需核实库存与催补记录');
+        if (type === '商品质量') inferred.push('需先核实订单与生产日期方可进入理赔流程；赔付金额超过客服权限需人工审批');
+        if (type === '退款异常') inferred.push('需核实订单开门记录判断是否未出货扣款');
+        const toVerify = [...(SOPS[type] ? SOPS[type].verify : []), ...missing.map(m => '缺少关键信息：' + m)];
+        const actions = [];
+        if (type === '设备故障') actions.push('创建设备故障工单并带出货架编码', '核实上次维修反馈与当前维修计划', classify.sysRepeat ? '按 SOP-ESC-001 创建督办任务并由主管闭环回访' : '向客户告知已确认的核查进度');
+        if (type === '补货异常') actions.push('对在途/最近补货单发起催办', '按点位核实排面与库存后提交补货需求', '约定补货时间并回访确认');
+        if (type === '商品质量') actions.push('核实订单与生产日期（待客户提供凭证）', '客服权限内可先原路退款 ≤¥200', '超权限赔付提交人工审批');
+        if (type === '退款异常') actions.push('核实订单开门记录与退款状态', '未出货扣款直接原路退款并答复到账时间');
+        if (!actions.length) actions.push('转人工核实客户具体诉求');
+        const replyMap = {
+          '设备故障': '您好，非常抱歉给您带来不便。我们已核实您名下设备状态并同步设备运维，会加急处理${cls}，处理结果将第一时间反馈您。',
+          '补货异常': '您好，非常抱歉货架缺货影响使用。我们已核查补货记录并向补货运营发起催办，将优先安排补货，预计补货后会及时告知您。',
+          '商品质量': '您好，非常抱歉给您带来不好的体验。为快速处理，麻烦您提供订单编号和商品生产日期照片，核实后我们将立即为您办理退款，如涉及赔付会有专人跟进。',
+          '退款异常': '您好，我们已核实您的订单与扣款记录，如确认未出货将立即为您原路退款，1-3 个工作日内到账。',
+        };
+        const reply = (replyMap[type] || '您好，您反馈的问题我们已记录，将尽快核实并回复您。').replace('${cls}', classify.sysRepeat ? '（已按重复投诉优先处理）' : '');
+        // —— 可选：千问大模型增强叙述（仅当配置了 DASHSCOPE_API_KEY；失败自动降级） ——
+        let llmUsed = false;
+        if (process.env.DASHSCOPE_API_KEY) {
+          try {
+            const llmRes = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+              method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + process.env.DASHSCOPE_API_KEY },
+              body: JSON.stringify({ model: 'qwen-plus', messages: [
+                { role: 'system', content: '你是客服处理助手。基于给定的已核实事实与SOP，用中文输出简短的处理思路（3句话内，不得编造事实）。' },
+                { role: 'user', content: JSON.stringify({ 投诉: text, 类型: type, 已核实事实: facts, SOP: sopMatch.map(s => s.name || '无') }) }] , temperature: 0.3 }),
+              signal: AbortSignal.timeout(15000),
+            });
+            if (llmRes.ok) { const j = await llmRes.json(); if (j.choices && j.choices[0]) { classify.llmNote = j.choices[0].message.content; llmUsed = true; } }
+          } catch {}
+        }
+        return ok(res, { mode: LLM_MODE(), llmUsed, classify, tools, sopMatch, plan: { facts, inferred, toVerify, actions, reply }, customer: cust ? { id: cust.id, name: cust.name } : null });
+      }
+
+      // ---- AI 运营洞察（VOC）：程序计算统计，规则模板生成叙述，不编造数据 ----
+      if (p === '/api/ai/insight' && req.method === 'GET') {
+        const tks = await sb('GET', 'tickets', { select: '*', order: 'created_at.desc', limit: 500 }).catch(() => []);
+        const byType = {}, byStatus = {}, byRegion = {};
+        let overdue = 0, repeatCust = {};
+        tks.forEach(t => {
+          const l1 = String(t.cat_path || '').split(' > ')[0] || '其他';
+          byType[l1] = (byType[l1] || 0) + 1;
+          byStatus[t.status] = (byStatus[t.status] || 0) + 1;
+          byRegion[t.region] = (byRegion[t.region] || 0) + 1;
+          repeatCust[t.customer_name] = (repeatCust[t.customer_name] || 0) + 1;
+          if (t.status !== '已完结' && t.sla_hours) {
+            const left = Number(t.sla_hours) - (Date.now() - new Date(String(t.created_at).replace(' ', 'T')).getTime()) / 36e5;
+            if (left < 0) overdue++;
+          }
+        });
+        const repeats = Object.entries(repeatCust).filter(([, n]) => n >= 2).sort((a, b) => b[1] - a[1]);
+        const top = Object.entries(byType).sort((a, b) => b[1] - a[1]);
+        const n = tks.length;
+        const narrative = n ? `本期共 ${n} 张工单（统计口径：全部历史工单，样本量 ${n}）。最主要问题集中在「${top[0][0]}」（${top[0][1]} 张，占 ${Math.round(top[0][1] / n * 100)}%）` + (top[1] ? `，其次为「${top[1][0]}」（${top[1][1]} 张，占 ${Math.round(top[1][1] / n * 100)}%）` : '') + `。未完结中 SLA 已超时 ${overdue} 张${overdue ? '，需立即督办' : ''}。${repeats.length ? `重复投诉客户 ${repeats.length} 位，最高 ${repeats[0][0]}（${repeats[0][1]} 张），符合 SOP-ESC-001 升级条件，建议主管闭环回访。` : ''}建议优先推动：① ${top[0][0]}类问题的根因治理；② SLA 临超时工单的催办闭环；③ 重复投诉客户的专项回访。（数据不足时以实际样本为准，本叙述由规则模板基于真实统计生成，未使用大模型编造。）` : '暂无工单数据，无法生成洞察。';
+        return ok(res, { mode: LLM_MODE(), total: n, byType, byStatus, byRegion, overdue, repeats: repeats.slice(0, 5), narrative });
+      }
+
 
       // ---- 泛型业务 CRUD（按 TABLES 白名单自动路由） ----
       for (const t of TABLES) {
