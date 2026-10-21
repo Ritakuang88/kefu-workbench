@@ -30,8 +30,6 @@ const TABLES = [
   { name: 'wishes', views: ['front', 'second'], columns: ['id', 'customer_id', 'code', 'product', 'brand', 'fe_code', 'in_list', 'supply_status', 'report_count', 'reporter', 'reporter_phone', 'wish_type', 'qty', 'period', 'created_at'], order: 'id.desc' },
   // —— AI 督办任务（人工确认后真实落库） ——
   { name: 'supervisions', views: ['front', 'second', 'manager'], columns: ['id', 'ticket_no', 'customer_id', 'customer_name', 'reason', 'dept', 'status', 'next_check', 'ops_log', 'created_at'], order: 'id.desc' },
-  // —— 剔时表（二线客服额外耗时记录，5-6月脱敏数据） ——
-  { name: 'timing_logs', views: ['manager'], columns: ['id', 'log_date', 'person', 'cat', 'qty', 'hours', 'note', 'created_at'], order: 'id.asc' },
 ];
 
 // 视图：front=一线工作台 second=二线工作台 manager=管理层 calc=理赔计算器(静态)
@@ -386,33 +384,6 @@ const server = http.createServer(async (req, res) => {
           },
           mode: LLM_MODE(),
         });
-      }
-
-      // ---- 剔时分析：基于 timing_logs 真实数据统计二线额外耗时（程序计算） ----
-      if (p === '/api/ai/timing' && req.method === 'GET') {
-        const logs = await sb('GET', 'timing_logs', { select: '*', limit: 2000 }).catch(() => []);
-        if (!logs.length) return ok(res, { empty: true, message: '剔时表尚未导入（请先在 Supabase 执行 migration_v3.sql）' });
-        const byCat = {}, byPerson = {}, byNote = {};
-        let totalH = 0, totalRows = 0;
-        logs.forEach(l => {
-          const h = Number(l.hours || 0);
-          totalH += h; totalRows++;
-          byCat[l.cat] = (byCat[l.cat] || 0) + h;
-          byPerson[l.person] = (byPerson[l.person] || 0) + h;
-          const n = String(l.note || '').trim();
-          if (n) { byNote[n] = (byNote[n] || 0) + h; }
-        });
-        // 质量类工单（含质量备注或售后退款效期质量）
-        let qualH = 0, qualN = 0;
-        logs.forEach(l => {
-          const n = String(l.note || '');
-          if (n.includes('质量') || String(l.cat).includes('效期质量')) { qualH += Number(l.hours || 0); qualN++; }
-        });
-        const top = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
-        const topNotes = Object.entries(byNote).sort((a, b) => b[1] - a[1]).slice(0, 10);
-        // AI 节省测算：质量/视频排查类按 AI 预填+视频定位辅助预估节省 40%（保守估计，标注为估算）
-        const est = { qualHours: qualH, qualCount: qualN, savedEst: Math.round(qualH * 0.4 * 10) / 10, estLabel: '估算口径：AI 预填+证据预取按保守 40% 节省估算，非实测' };
-        return ok(res, { totalRows, totalHours: Math.round(totalH), byCat: top, byPerson: Object.entries(byPerson).sort((a, b) => b[1] - a[1]), byNote: topNotes, quality: est });
       }
 
       // ---- AI 运营洞察（VOC）：程序计算统计，规则模板生成叙述，不编造数据 ----

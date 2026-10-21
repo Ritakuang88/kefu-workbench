@@ -168,6 +168,10 @@ table.tbl tr:hover td{background:#fafbfc}
 @keyframes fabpulse{0%{box-shadow:0 6px 20px rgba(245,63,63,.5),0 0 0 0 rgba(245,63,63,.4)}70%{box-shadow:0 6px 20px rgba(245,63,63,.5),0 0 0 14px rgba(245,63,63,0)}100%{box-shadow:0 6px 20px rgba(245,63,63,.5),0 0 0 0 rgba(245,63,63,0)}}
 /* 卡片轻阴影 */
 .card{box-shadow:var(--shadow)}
+/* 视频时间轴标记 */
+.vmark{position:absolute;top:4px;width:3px;height:26px;cursor:pointer;transform:translateX(-50%)}
+.vmark .vlab{position:absolute;top:-1px;left:6px;font-size:10px;color:#ccc;white-space:nowrap}
+.vmark:hover .vlab{color:#fff}
 iframe.calcframe{width:100%;height:calc(100vh - 52px);border:none;background:#fff}
 </style>
 </head>
@@ -204,7 +208,7 @@ iframe.calcframe{width:100%;height:calc(100vh - 52px);border:none;background:#ff
     <section class="view" id="view-ai">
       <div class="topbar">
         <h2><span class="logo-dot"></span>AI 智能客服工作台</h2><span class="slogan">— 解决客诉流程的信息断层和协同效率问题</span>
-        <button class="btn btn-sm" style="margin-left:auto" onclick="runFullDemo()">🎬 一键演示：Agent 完整工作流（设备重复断网案例）</button>
+        <button class="btn btn-sm" style="margin-left:auto" onclick="runFullDemo()">🎬 一键演示：Agent 完整工作流（真实工单脱敏案例）</button>
       </div>
       <div style="padding:12px;display:grid;grid-template-columns:400px 1fr;gap:10px;align-items:start">
         <div>
@@ -220,6 +224,15 @@ iframe.calcframe{width:100%;height:calc(100vh - 52px);border:none;background:#ff
           <div class="card" style="padding:12px">
             <h3>🎬 体验 Agent 完整工作流</h3>
             <div id="aiCases"></div>
+          </div>
+          <div class="card" style="padding:12px">
+            <h3>⏱ 耗时与节省（剔时表 5-6 月口径）</h3>
+            <div class="mini" style="line-height:1.9">
+              视频复核额外耗时：<span id="tsVideo"></span><br>
+              质量预处理：<span id="tsPre"></span><br>
+              质量单+售后退款：<span id="tsQual"></span><br>
+              <div class="alert-blue" style="margin-top:6px">工作台优化后预估节省（保守口径：视频复核省 50%、质量类省 30%）：<b id="tsSave"></b><div class="mini" style="margin-top:2px">估算口径，非实测；统计由程序对剔时表逐行计算</div></div>
+            </div>
           </div>
         </div>
         <div id="aiResult"><div class="card"><div class="mini" style="padding:40px 0;text-align:center">输入投诉或点选案例后，这里将展示 Agent 的完整处理过程：<br>正在做什么 → 调用了什么工具 → 查到什么事实 → 依据什么规则 → 建议什么动作</div></div></div>
@@ -302,10 +315,6 @@ iframe.calcframe{width:100%;height:calc(100vh - 52px);border:none;background:#ff
       </div>
       <div class="statgrid" id="stats"></div>
       <div style="padding:0 12px">
-        <div class="card">
-          <h3>⏱ 剔时分析 · 二线客服额外耗时（5-6月真实脱敏数据） <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="loadTiming()">刷新分析</button></h3>
-          <div id="timingBody" class="mini" style="padding:8px 0">点击刷新，基于剔时表真实数据统计：质量预处理/质量单+售后退款/看视频定位等额外耗时分布与 AI 节省测算。</div>
-        </div>
         <div class="card">
           <h3>🧠 VOC 运营洞察 <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="genInsight()">AI 生成运营洞察</button></h3>
           <div id="vocBody" class="mini" style="padding:8px 0">点击按钮，AI 基于真实工单统计生成运营洞察（程序计算数据，AI 负责解释与建议，不编造数字）。</div>
@@ -509,24 +518,40 @@ async function loadAll(){
   $('fRegion').innerHTML='<option value="">全部大区</option>'+regions.map(function(x){return '<option>'+esc(x)+'</option>';}).join('');
   if($('view-front').classList.contains('on')||S.views.includes('front'))renderFront();
   if(S.views.includes('second')){renderQueue();renderClosureForm();renderCustBrief();renderBiz('bizTabs2','bizBody2','bizTab2');}
-  if(S.views.includes('manager')){renderStats();renderMgrTable();renderSlaCheck();renderSupTable();loadTiming();}
+  if(S.views.includes('manager')){renderStats();renderMgrTable();renderSlaCheck();renderSupTable();}
   renderAiBar();
 }
 
 /* ===== AI 智能处理视图 ===== */
+var TIMING_STATS={videoH:3.0,videoN:6,preH:232.0,preN:30,qualH:1537.5,qualN:103,saveVideo:1.5,saveQual:461.2,saveTotal:462.7};
 var DEMO_CASES=[
-  {name:'案例A · 设备故障重复投诉',cust:1,text:'这台机器昨天就坏了，上周也出现过同样的问题，每次都说会安排维修，到现在还是用不了，再不来人处理我就投诉了！'},
-  {name:'案例B · 补货不及时',cust:1,text:'我们办公室的货柜连续几天都没有货，之前已经催过两次了，为什么还没有人来补货？'},
-  {name:'案例C · 商品质量异常',cust:1,text:'我今天买的饮料已经过期了，希望退款，也希望你们认真处理这件事，不然我打12315投诉。'},
+ {name:'案例A · 商品过期退款（真实工单 26071801541 脱敏）',cust:1,
+  text:'13775224*** 客来电表示买到过期商品的问题一直未处理，都半个多月了，前完结工单 26052803577，烦请处理。',
+  fields:{no:'26071801541',cat3:'商品过期退款',channel:'热线客服',closure:'满足客诉',urge:0,handler:'处理人·陈（化名）',regionHandler:'无',problem:'商品过期',product:'三得利无糖乌龙茶500ml',refundStatus:'已退款',demandAmt:400,actualAmt:400,prodDate:'2026-01-07',refundTime:'2026-07-20',visible:'是',role:'其他',order:'43473337604150000',shelf:'A88****（演示）',followup:'总部回复可以电话免责，电客 13775224*** 已说明免责话术无异议，已发转账并同步沟通群'},
+  video:{open:'0:02',suspect:'0:17',suspectNote:'手部伸入货架取货，无对应扫码记录（AI 标记疑似帧）',close:'0:31'}},
+ {name:'案例B · 变质异味+催单1次（真实工单 26070500170 脱敏）',cust:1,
+  text:'会话ID1528256**** 用户进线表示变质了，一股劣质油味，过期了，核实过期协商退款，客表示光退钱肯定不行，我要的是结果，烦请处理。',
+  fields:{no:'26070500170',cat3:'商品过期退款',channel:'在线客服',closure:'满足客诉',urge:1,handler:'处理人·刘（化名）',regionHandler:'无',problem:'商品临期',product:'谷焙奇沙琪玛葡萄味42g',refundStatus:'协商中',demandAmt:22.69,actualAmt:0,prodDate:'2025-11-06',refundTime:'2026-07-05',visible:'否',role:'顾客',order:'43949178304050012',shelf:'A88****（演示）',followup:'查看临期未过期，回访客户 15254557*** 解释，客户表示味道不对，致歉安抚，沟通退款+20能量豆，还有1天过期已锁柜已建盘点单'},
+  video:{open:'0:01',suspect:'0:14',suspectNote:'顾客取出商品查看包装（AI 标记：包装完整但客诉异味，需结合生产日期核验）',close:'0:28'}},
+ {name:'案例C · 疑似非本人消费/乱扣款（真实工单 26070801692 脱敏）',cust:1,
+  text:'会话ID1529101**** 用户进线表示乱扣款，我就拿了一个这个，我没有拿百岁山和玉米肠，照片发过来呀，烦请处理。',
+  fields:{no:'26070801692',cat3:'其他原因（疑似非本人消费）',channel:'在线客服',closure:'无法联系',urge:0,handler:'处理人·赵（化名）',regionHandler:'无',problem:'扣款争议',product:'百岁山/玉米肠（争议）',refundStatus:'未退款',demandAmt:0,actualAmt:0,prodDate:'-',refundTime:'-',visible:'-',role:'顾客',order:'43976120504060002',shelf:'A88****（演示）',followup:'尊敬的客户：您好！我们在处理您的诉求过程中因联系不上您无法进一步核实…'},
+  video:{open:'0:01',suspect:'0:12',suspectNote:'同一人连续拿取 3 件商品，扫码记录仅 1 件（AI 标记疑似未扫码拿取）',close:'0:26'}},
 ];
 function renderAiInit(){
   var sel=$('aiCust');if(!sel)return;
   sel.innerHTML=S.customers.map(function(c){return '<option value="'+c.id+'"'+(c.id===1?' selected':'')+'>'+esc(c.name)+'（'+esc(c.level)+'）</option>';}).join('');
   $('aiCases').innerHTML=DEMO_CASES.map(function(c,i){return '<div class="qcard" onclick="loadCase('+i+')"><div style="font-weight:700;font-size:13px">'+c.name+'</div><div class="mini" style="margin-top:3px">“'+esc(c.text)+'”</div></div>';}).join('');
+  var T=TIMING_STATS;
+  if($('tsVideo'))$('tsVideo').innerHTML='<b>'+T.videoH+'h</b>（'+T.videoN+' 条复核工单视频）';
+  if($('tsPre'))$('tsPre').innerHTML='<b>'+T.preH+'h</b>（'+T.preN+' 条）';
+  if($('tsQual'))$('tsQual').innerHTML='<b>'+T.qualH+'h</b>（'+T.qualN+' 条）';
+  if($('tsSave'))$('tsSave').textContent='约 '+T.saveTotal+'h / 两月（视频 '+T.saveVideo+'h + 质量类 '+T.saveQual+'h）≈ '+(T.saveTotal/2).toFixed(0)+'h/月';
 }
 function loadCase(i){
   var c=DEMO_CASES[i];
   $('aiText').value=c.text;$('aiCust').value=c.cust;
+  window._caseFields=c;
   runAiAnalyze();
 }
 async function runAiAnalyze(){
@@ -546,6 +571,20 @@ function renderAiResult(r,pf){
   var c=r.classify;
   var html='<div class="card" style="padding:12px">';
   html+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><span class="tag tag-'+(r.llmUsed?'green':'orange')+'">'+(r.llmUsed?'千问大模型增强':'演示模式·规则引擎')+'</span><span class="mini">工具查库为真实执行；固定规则判断与模拟数据均已标注</span></div>';
+  /* 案例字段卡（真实工单脱敏）+ 连贯度断点检查 */
+  var cf=window._caseFields;
+  if(cf&&cf.fields){
+    var f=cf.fields;
+    html+='<div class="card" style="background:#f7f8fa;border:1px solid var(--line);padding:10px;margin-bottom:10px"><h3 style="font-size:12.5px">📄 工单原始字段（真实工单 '+esc(f.no)+' · 已脱敏：手机号后3位/门牌/货架编码）</h3><div class="grid2" style="gap:2px 12px">'+
+      kv('三级分类',esc(f.cat3))+kv('来单渠道',esc(f.channel))+kv('闭环类型',esc(f.closure))+kv('催单次数','<b style="color:'+(f.urge>0?'var(--red)':'inherit')+'">'+f.urge+'</b>')+
+      kv('当前处理人',esc(f.handler))+kv('地区处理人',esc(f.regionHandler))+kv('商品问题',esc(f.problem))+kv('商品名称',esc(f.product))+
+      kv('退款状态',esc(f.refundStatus))+kv('客要求退款','¥'+f.demandAmt)+kv('实际退款','¥'+f.actualAmt)+kv('生产日期',esc(f.prodDate))+
+      kv('退款时间',esc(f.refundTime))+kv('异常肉眼可见',esc(f.visible))+kv('反馈角色',esc(f.role))+kv('订单号','<span class="mono">'+esc(f.order)+'</span>')+
+      '</div><div class="mini" style="margin-top:6px">最近跟进：'+esc(f.followup)+'</div></div>';
+    if(f.urge>=1){
+      html+='<div class="alert-orange" style="margin-bottom:10px"><b>⚠ 流程连贯度断点：</b>该工单已被催单 '+f.urge+' 次，最近跟进停在「'+esc(String(f.followup).slice(0,40))+'…」——上下文未同步给下一处理人。AI 建议：创建 continuity 督办并把跟进摘要自动带入新工单。</div>';
+    }
+  }
   /* 步骤 1：智能识别 */
   html+='<div class="tl"><div class="tl-item"><div class="tl-hd">第 1 步 · 智能识别</div><div class="tl-bd">'+
     '<div class="kv"><span>客诉类型</span><b>'+esc(c.type)+'</b></div>'+
@@ -579,6 +618,13 @@ function renderAiResult(r,pf){
     '</div></div>';
   /* 步骤 5：AI 预填工单 + 人工确认执行 */
   var P=pf&&pf.prefill?pf.prefill:{cat_path:'',risk:c.angry?'投诉':'咨询',urgency:'一般',shelf_code:'',shelf_id:'',demand:text0Safe()};
+  var cf0=window._caseFields;
+  if(cf0&&cf0.fields){
+    var cfPath={'商品过期退款':'货架运营 > 商品质量 > 商品过期','其他原因（疑似非本人消费）':'客诉售后 > 售后 > 商品仅退款'}[cf0.fields.cat3];
+    if(cfPath)P.cat_path=cfPath;
+    P.demand=cf0.text.slice(0,120);
+    P.shelf_code=cf0.fields.shelf;
+  }
   var opts=function(arr,cur){return arr.map(function(o){return '<option'+(o===cur?' selected':'')+'>'+esc(o)+'</option>';}).join('');};
   html+='<div class="tl-item todo"><div class="tl-hd">第 5 步 · AI 预填工单（所有字段可人工修改）+ 确认执行</div><div class="tl-bd">'+
     '<div style="background:#eef4ff;border:1px solid #c9dcff;border-radius:8px;padding:8px 10px;margin-bottom:8px">'+
@@ -593,7 +639,7 @@ function renderAiResult(r,pf){
     '<div class="fld"><label>客户诉求（AI 提取，可改）</label><textarea id="pfDemand" rows="2">'+esc(P.demand)+'</textarea></div>'+
     '<div class="fld"><label>工单内容（内部记录）</label><textarea id="pfContent" rows="2">[AI 辅助] '+esc((r.plan&&r.plan.facts?r.plan.facts.join('；'):'').slice(0,150))+'</textarea></div>'+
     '</div>'+
-    (pf&&pf.hints&&pf.hints.needVideo?'<div class="alert-orange" style="margin-bottom:8px">📹 '+esc(pf.hints.videoNote||'需调取订单前后视频核对')+(pf.hints.order?('｜最近订单：<b class="mono">'+esc(pf.hints.order.no)+'</b> '+esc(pf.hints.order.open_time||'')+'（可从该订单前后视频入手）'):'')+'</div>':'')+
+    (pf&&pf.hints&&pf.hints.needVideo?'<div class="alert-orange" style="margin-bottom:8px">📹 需调取订单前后视频核对商品情况（人工翻看平均 15-25 分钟/单）'+(pf.hints.order?('｜已自动带出最近订单：<b class="mono">'+esc(pf.hints.order.no)+'</b> 开门 '+esc(pf.hints.order.open_time||'')):'')+'</div>'+renderVideoTimeline(window._caseFields&&window._caseFields.video, pf.hints.order):'')+
     (pf&&pf.hints&&pf.hints.missing&&pf.hints.missing.length?'<div class="alert-orange" style="margin-bottom:8px">⚠ 还需向客户核实：'+esc(pf.hints.missing.join('、'))+'</div>':'')+
     '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
     '<button class="btn btn-primary btn-sm" id="aiActTicket" onclick="aiCreateTicket()">✔ 人工确认 · 创建工单（真实写入）</button>'+
@@ -615,7 +661,10 @@ async function aiCreateTicket(){
     var catPath=$('pfCat')?$('pfCat').value:(r.sopMatch[0]&&r.sopMatch[0].name?catPathOf(r.classify.type):'');
     var cat=S.cats.find(function(x){return x.path===catPath;});
     var cust=S.customers.find(function(x){return x.id===+$('aiCust').value;})||S.customers[0];
-    var t=await post('/api/tickets',{ticket_no:no,customer_id:cust.id,customer_name:cust.name,region:cust.region,channel:'AI 工单助手',biz_type:($('pfBiz')?$('pfBiz').value:'B端'),cat_path:catPath||'客诉售后 > 客诉 > 处理时效投诉',cat_code:cat?cat.code:'',shelf_id:($('pfShelfId')?$('pfShelfId').value:''),shelf_code:($('pfShelf')?$('pfShelf').value:''),risk:($('pfRisk')?$('pfRisk').value:'咨询'),urgency:($('pfUrg')?$('pfUrg').value:'一般'),escalate:r.classify.angry||r.classify.sysRepeat,role:'店主',demand:($('pfDemand')?$('pfDemand').value:'').slice(0,200),content:($('pfContent')?$('pfContent').value:'[AI 辅助]').slice(0,500),visible_content:'',status:'待受理',handler:null,creator:'AI 助手（'+S.me.name+' 确认）',sla_hours:r.classify.severity==='较高'?4:24});
+    var contentBase=($('pfContent')?$('pfContent').value:'[AI 辅助]');
+    var cf1=window._caseFields;
+    if(cf1&&cf1.fields)contentBase+='｜历史跟进（自动带入，解决信息断层）：'+cf1.fields.followup;
+    var t=await post('/api/tickets',{ticket_no:no,customer_id:cust.id,customer_name:cust.name,region:cust.region,channel:cf1&&cf1.fields?cf1.fields.channel:'AI 工单助手',biz_type:($('pfBiz')?$('pfBiz').value:'B端'),cat_path:catPath||'客诉售后 > 客诉 > 处理时效投诉',cat_code:cat?cat.code:'',shelf_id:($('pfShelfId')?$('pfShelfId').value:''),shelf_code:($('pfShelf')?$('pfShelf').value:''),risk:($('pfRisk')?$('pfRisk').value:'咨询'),urgency:($('pfUrg')?$('pfUrg').value:'一般'),escalate:r.classify.angry||r.classify.sysRepeat,role:'店主',demand:($('pfDemand')?$('pfDemand').value:'').slice(0,200),content:contentBase.slice(0,500),visible_content:'',status:'待受理',handler:null,creator:'AI 助手（'+S.me.name+' 确认）',sla_hours:r.classify.severity==='较高'?4:24});
     await post('/api/ticket_events',{ticket_id:t.id,actor:S.me.name,action:'建单（AI 预填 + 人工确认）',detail:'AI 识别类型：'+r.classify.type+'；'+(r.plan.actions[0]||'')});
     $('aiActLog').innerHTML+='<br>✓ 工单已创建并写入数据库：<b class="mono">'+esc(no)+'</b> → 已自动进入二线受理队列';
     await reloadTickets();toast('工单已创建：'+no+'（二线队列可见）');
@@ -654,16 +703,59 @@ function aiCopyReply(){
   navigator.clipboard&&navigator.clipboard.writeText(r.plan.reply);toast('客服回复已复制到剪贴板');
 }
 
+/* ===== 模拟视频时间轴（演示画面，非真实监控） ===== */
+function renderVideoTimeline(v,order){
+  if(!v)return '';
+  var toSec=function(t){var p=String(t).split(':');return (+p[0])*60+(+p[1]);};
+  var total=40;
+  var mk=function(sec,color,label,note,key){
+    return '<div class="vmark" style="left:'+(sec/total*100)+'%;background:'+color+'" title="'+esc(label)+'" onclick="vSeek('+sec+',\''+key+'\')"><span class="vlab">'+esc(label)+'</span></div>';
+  };
+  return '<div style="border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:8px;background:#000">'+
+    '<div style="position:relative;height:150px;background:linear-gradient(180deg,#1a1a1a,#2a2a2a);display:flex;align-items:center;justify-content:center">'+
+    '<div style="position:absolute;left:8%;top:12%;width:84%;height:52%;background:repeating-linear-gradient(90deg,#3d3d3d 0 26px,#4a4a4a 26px 30px);border:2px solid #555;border-radius:4px"></div>'+
+    '<div style="position:absolute;left:44%;top:30%;width:16%;height:34%;background:#666;border-radius:50% 50% 8px 8px;opacity:.85"></div>'+
+    '<div id="vFrame" style="position:absolute;bottom:6px;left:8px;color:#ffd666;font-size:11px;font-family:Consolas,monospace">00:00 / 00:40</div>'+
+    '<div style="position:absolute;top:6px;right:8px;color:#999;font-size:10.5px">演示模拟画面 · 非真实监控</div>'+
+    '<button id="vPlay" onclick="vToggle()" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:44px;height:44px;border-radius:50%;border:none;background:rgba(255,255,255,.9);font-size:16px;cursor:pointer">▶</button>'+
+    '</div>'+
+    '<div style="position:relative;height:34px;background:#111">'+
+    '<div id="vProg" style="position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(47,123,255,.35)"></div>'+
+    mk(toSec(v.open),'#2f7bff','开门','open')+
+    mk(toSec(v.suspect),'#f53f3f','⚠ 疑似帧','suspect')+
+    mk(toSec(v.close),'#888','离柜','close')+
+    '</div>'+
+    '<div id="vNote" style="background:#1a1a1a;color:#ddd;font-size:12px;padding:6px 10px;min-height:30px">点击时间轴标记查看 AI 标记依据 · 疑似帧 '+esc(v.suspect)+'：'+esc(v.suspectNote)+'</div>'+
+    '</div>';
+}
+var vTimer=null,vPos=0;
+function vSeek(sec,key){
+  vPos=sec;vPaint();
+  var cf=window._caseFields;var v=cf&&cf.video;
+  var notes={open:'开门时刻：顾客进入取货区（订单开门时间锚点）',suspect:v?v.suspectNote:'',close:'离柜时刻：门关闭，订单结算'};
+  $('vNote').innerHTML='<b style="color:#ffd666">'+['00:',''][0]+String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0')+'</b> · '+esc(notes[key]||'');
+}
+function vPaint(){
+  var p=$('vProg');if(p)p.style.width=(vPos/40*100)+'%';
+  var f=$('vFrame');if(f)f.textContent=String(Math.floor(vPos/60)).padStart(2,'0')+':'+String(Math.round(vPos%60)).padStart(2,'0')+' / 00:40';
+}
+function vToggle(){
+  var b=$('vPlay');
+  if(vTimer){clearInterval(vTimer);vTimer=null;b.textContent='▶';return;}
+  b.textContent='⏸';
+  vTimer=setInterval(function(){vPos+=0.4;if(vPos>=40){vPos=40;clearInterval(vTimer);vTimer=null;$('vPlay').textContent='▶';}vPaint();},100);
+}
+
 /* ===== 一键演示：Agent 完整工作流（设备重复断网案例，11 步真实执行） ===== */
 async function runFullDemo(){
-  toast('演示开始：设备重复断网案例（全部真实执行）');
+  toast('演示开始：真实工单脱敏案例（全部真实执行）');
   $('aiText').value=DEMO_CASES[0].text;
   $('aiCust').value=DEMO_CASES[0].cust;
   await runAiAnalyze();
   // 等渲染后逐步高亮：自动执行 人工确认→建单→二线受理→督办→统计变化
   await sleep(600);
   var m=modal('<h3 style="margin-bottom:8px">🎬 Agent 完整工作流演示 · 执行清单</h3><div class="tl" id="demoTl">'+
-    ['① 识别设备断网投诉（规则引擎）','② get_equipment_status() 查设备状态（真实查库）','③ get_ticket_history() 查历史工单（真实查库）','④ 识别重复故障线索（系统核验）','⑤ search_sop() 检索 SOP-DEV-001（规则匹配）','⑥ 推荐工单三级分类（可人工修改）','⑦ 自动预填工单字段 ✓ 已在右侧展示'].map(function(s){return '<div class="tl-item"><div class="tl-bd">'+s+'</div></div>';}).join('')+
+    ['① 识别客诉类型（规则引擎）','② get_order_details()/get_customer_info() 查订单与客户（真实查库）','③ get_ticket_history() 查历史工单（真实查库）','④ 连贯度/重复投诉检查（催单次数+跟进停滞）','⑤ search_sop() 检索对应 SOP（规则匹配）','⑥ 推荐工单三级分类（可人工修改）','⑦ 自动预填工单字段 ✓ 已在右侧展示'].map(function(s){return '<div class="tl-item"><div class="tl-bd">'+s+'</div></div>';}).join('')+
     '<div class="tl-item todo"><div class="tl-bd"><b>接下来人工确认执行：</b></div></div></div>'+
     '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">'+
     '<button class="btn btn-primary btn-sm" id="demoGo1">第 8-9 步：人工确认创建工单 → 进入二线队列</button>'+
@@ -688,25 +780,6 @@ async function runFullDemo(){
 }
 function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
 
-/* ===== 剔时分析 ===== */
-async function loadTiming(){
-  var el=$('timingBody');if(!el)return;
-  el.textContent='正在统计剔时数据…';
-  try{
-    var r=await api('/api/ai/timing');
-    if(r.empty){el.innerHTML='<div class="alert-orange">'+esc(r.message)+'</div>';return;}
-    var maxCat=r.byCat[0]?r.byCat[0][1]:1;
-    var bars=r.byCat.slice(0,6).map(function(x){return '<div style="display:flex;align-items:center;gap:8px;padding:2px 0"><span style="width:130px;font-size:12.5px">'+esc(x[0])+'</span><div style="flex:1;background:var(--gray-l);border-radius:4px;height:14px"><div style="width:'+Math.round(x[1]/maxCat*100)+'%;height:100%;background:linear-gradient(90deg,#4f96ff,#2f7bff);border-radius:4px"></div></div><b style="width:70px;text-align:right">'+x[1].toFixed(0)+'h</b></div>';}).join('');
-    var notes=r.byNote.slice(0,6).map(function(x){return '<span class="chip">'+esc(x[0])+' · '+x[1].toFixed(1)+'h</span>';}).join('');
-    var q=r.quality;
-    el.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">'+
-    '<div><div class="mini" style="font-weight:700;margin-bottom:4px">工作项耗时分布（总 '+r.totalHours+'h / '+r.totalRows+' 条）</div>'+bars+
-    '<div class="mini" style="margin-top:8px">高频备注：'+notes+'</div></div>'+
-    '<div><div class="mini" style="font-weight:700;margin-bottom:4px">AI 节省测算（质量/视频排查类）</div>'+
-    '<div class="alert-blue" style="margin-bottom:6px"><b>'+q.qualCount+' 条质量类记录共 '+q.qualHours.toFixed(1)+'h</b>（质量预处理/质量单+售后退款/效期质量）<br>按 AI 预填+证据预取保守节省 40% 估算：<b>约 '+q.savedEst+'h/两月</b>（≈'+(q.savedEst/2).toFixed(1)+'h/月）<br><span class="mini">'+esc(q.estLabel)+'</span></div>'+
-    '<div class="mini">痛点对应：商品质量/不文明购物类需人工翻看订单前后视频定位，AI 助手已预取最近订单并提示视频排查路径（见 AI 工单助手第 5 步）。</div></div></div>';
-  }catch(e){el.innerHTML='<span style="color:var(--red)">'+esc(e.message)+'</span>';}
-}
 function renderSlaCheck(){
   var el=$('slaCheck');if(!el)return;
   var list=S.tickets.filter(function(t){var l=slaLeft(t);return t.status!=='已完结'&&(l<8||l<0);}).map(function(t){return {t:t,l:slaLeft(t)};});
