@@ -232,6 +232,7 @@ iframe.calcframe{width:100%;height:calc(100vh - 52px);border:none;background:#ff
               质量预处理：<span id="tsPre"></span><br>
               质量单+售后退款：<span id="tsQual"></span><br>
               <div class="alert-blue" style="margin-top:6px">工作台优化后预估节省（保守口径：视频复核省 50%、质量类省 30%）：<b id="tsSave"></b><div class="mini" style="margin-top:2px">估算口径，非实测；统计由程序对剔时表逐行计算</div></div>
+              <div id="tsTable" style="margin-top:8px"></div>
             </div>
           </div>
         </div>
@@ -547,6 +548,16 @@ function renderAiInit(){
   if($('tsPre'))$('tsPre').innerHTML='<b>'+T.preH+'h</b>（'+T.preN+' 条）';
   if($('tsQual'))$('tsQual').innerHTML='<b>'+T.qualH+'h</b>（'+T.qualN+' 条）';
   if($('tsSave'))$('tsSave').textContent='约 '+T.saveTotal+'h / 两月（视频 '+T.saveVideo+'h + 质量类 '+T.saveQual+'h）≈ '+(T.saveTotal/2).toFixed(0)+'h/月';
+  if($('tsTable')){
+    var tot=0,totM=0,totS=0;
+    var rowsHtml=VOL_TOP.map(function(v){
+      var mo=Math.round(v[1]/4), sv=mo*12.5/60; tot+=v[1]; totM+=mo; totS+=sv;
+      return '<tr><td>'+esc(v[0])+'</td><td>'+v[1]+'</td><td>'+mo+'</td><td><span class="tag tag-red">需视频</span></td><td>'+sv.toFixed(0)+'h</td></tr>';
+    }).join('');
+    $('tsTable').innerHTML='<div class="mini" style="font-weight:700;margin-bottom:3px">售后服务量 TOP10（7-10月真实量级 · 需视频复核类）</div>'+
+      tbl(['三级分类','4月总量','月均','视频复核','月节省估算'],rowsHtml+'<tr style="font-weight:700;background:var(--gray-l)"><td>合计</td><td>'+tot+'</td><td>'+totM+'</td><td>—</td><td>'+totS.toFixed(0)+'h</td></tr>')+
+      '<div class="mini" style="margin-top:4px">口径：复核 25 分钟/单 → 优化后 12.5 分钟/单（保守省 50%）；量级来自工单透视表，节省为估算</div>';
+  }
 }
 function loadCase(i){
   var c=DEMO_CASES[i];
@@ -601,10 +612,13 @@ function renderAiResult(r,pf){
     r.tools.map(function(t){return '<div style="padding:4px 0;border-bottom:1px dashed var(--line)"><span class="mono" style="color:var(--brand)">fn '+esc(t.tool)+'()</span> <span class="tag tag-green">✓ 已执行</span><div class="mini" style="margin-top:2px">'+esc(t.summary)+'</div></div>';}).join('')+
     '</div></div>';
   /* 步骤 3：SOP 匹配 */
-  html+='<div class="tl-item"><div class="tl-hd">第 3 步 · SOP 智能匹配</div><div class="tl-bd">'+
+  html+='<div class="tl-item"><div class="tl-hd">第 3 步 · SOP 智能匹配（真实流程表 v2.0）</div><div class="tl-bd">'+
     r.sopMatch.map(function(s){return s.id?
-      '<div style="padding:5px 8px;border:1px solid var(--line);border-radius:6px;margin-bottom:5px"><b>'+esc(s.id)+'</b> '+esc(s.name)+' <span class="tag tag-gray">'+esc(s.ver)+'</span><div class="mini">'+esc(s.note)+'</div>'+
-      '<div class="mini">须核实：'+esc(s.verify.join('；'))+'</div><div class="mini">客服可执行：'+esc(s.canDo.join('；'))+'</div><div class="mini">需审批：'+esc(s.needApproval.join('；'))+'</div><div class="mini" style="color:var(--orange)">升级条件：'+esc(s.escalate)+'</div></div>'
+      '<div style="padding:5px 8px;border:1px solid var(--line);border-radius:6px;margin-bottom:5px"><b>'+esc(s.id)+'</b> '+esc(s.name)+' <span class="tag tag-gray">'+esc(s.ver)+'</span>'+(s.video?' <span class="tag tag-red">需视频复核</span>':'')+'<div class="mini">'+esc(s.note)+'</div>'+
+      '<div class="mini"><b>一线：</b>'+esc(s.first||'')+'</div><div class="mini"><b>二线：</b>'+esc(s.second||'')+'</div>'+
+      (s.verify&&s.verify.length?'<div class="mini">须核实：'+esc(s.verify.join('；'))+'</div>':'')+
+      (s.limit?'<div class="mini" style="color:var(--orange)">权限阈值：'+esc(s.limit)+'</div>':'')+
+      (s.escalate?'<div class="mini" style="color:var(--orange)">升级条件：'+esc(s.escalate)+'</div>':'')+'</div>'
       :'<div class="alert-orange">⚠ '+esc(s.note)+'</div>';}).join('')+
     '</div></div>';
   /* 步骤 4：处理方案 */
@@ -639,7 +653,7 @@ function renderAiResult(r,pf){
     '<div class="fld"><label>客户诉求（AI 提取，可改）</label><textarea id="pfDemand" rows="2">'+esc(P.demand)+'</textarea></div>'+
     '<div class="fld"><label>工单内容（内部记录）</label><textarea id="pfContent" rows="2">[AI 辅助] '+esc((r.plan&&r.plan.facts?r.plan.facts.join('；'):'').slice(0,150))+'</textarea></div>'+
     '</div>'+
-    (pf&&pf.hints&&pf.hints.needVideo?'<div class="alert-orange" style="margin-bottom:8px">📹 需调取订单前后视频核对商品情况（人工翻看平均 15-25 分钟/单）'+(pf.hints.order?('｜已自动带出最近订单：<b class="mono">'+esc(pf.hints.order.no)+'</b> 开门 '+esc(pf.hints.order.open_time||'')):'')+'</div>'+renderVideoTimeline(window._caseFields&&window._caseFields.video, pf.hints.order):'')+
+    (pf&&pf.hints&&pf.hints.needVideo?'<div class="alert-orange" style="margin-bottom:8px">📹 需视频复核（人工平均 20-30 分钟/单 → AI 辅助约 8 分钟）'+(pf.hints.order?('｜已自动带出最近订单：<b class="mono">'+esc(pf.hints.order.no)+'</b> 开门 '+esc(pf.hints.order.open_time||'')):'')+'<div style="margin-top:6px"><b>复核清单：</b>'+(pf.hints.videoChecklist||[]).map(function(v){return '<span class="chip" style="cursor:default">'+esc(v)+'</span>';}).join('')+'</div><div style="margin-top:6px"><button class="btn btn-sm" onclick="genVideoConclusion()">📹 一键生成视频复核结论（写入工单内容）</button></div></div>'+renderVideoTimeline(window._caseFields&&window._caseFields.video, pf.hints.order):'')+
     (pf&&pf.hints&&pf.hints.missing&&pf.hints.missing.length?'<div class="alert-orange" style="margin-bottom:8px">⚠ 还需向客户核实：'+esc(pf.hints.missing.join('、'))+'</div>':'')+
     '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
     '<button class="btn btn-primary btn-sm" id="aiActTicket" onclick="aiCreateTicket()">✔ 人工确认 · 创建工单（真实写入）</button>'+
@@ -745,6 +759,23 @@ function vToggle(){
   b.textContent='⏸';
   vTimer=setInterval(function(){vPos+=0.4;if(vPos>=40){vPos=40;clearInterval(vTimer);vTimer=null;$('vPlay').textContent='▶';}vPaint();},100);
 }
+/* 一键生成视频复核结论（基于时间轴标记+SOP 判定规则，写入工单内容供人工确认） */
+function genVideoConclusion(){
+  var cf=window._caseFields,v=cf&&cf.video;
+  var r=window._aiLast;var type=r?r.classify.type:'';
+  var concl='[视频复核结论·AI 辅助生成] 订单 '+(cf&&cf.fields?cf.fields.order:'见订单快照')+'：开门 '+((v&&v.open)||'0:02')+'，疑似帧 '+((v&&v.suspect)||'0:17')+'（'+((v&&v.suspectNote)||'')+'），离柜 '+((v&&v.close)||'0:31')+'。';
+  if(type==='不文明购物退款')concl+='扫码记录与拿取件数不一致，按 SOP-THF-001：≤50元婉拒1次不接受可退，>50元反馈地区运营经理48小时内回复。';
+  else if(type==='已扣费要求退费')concl+='扣费明细与视频取货不一致，按 SOP-DED-001：≤50元婉拒1次可退，>50元报地区经理，200元以上走组长审批。';
+  else if(type==='订单多扣费')concl+='识别错误属实，按 SOP-OVR-001：48小时原路退差价并修正库存。';
+  else concl+='按对应 SOP 权限阈值执行，退款动作需人工确认。';
+  concl+='（本结论由时间轴标记+规则生成，最终判定以人工复核为准）';
+  var ta=$('pfContent');if(ta)ta.value=(ta.value?ta.value+'\n':'')+concl;
+  toast('视频复核结论已写入工单内容，可修改后随工单提交');
+}
+/* 售后服务量 TOP（7-10月透视表真实量级）与视频复核节省测算 */
+var VOL_TOP=[
+  ['不文明购物退款',2084,1],['商品过期退款',1652,1],['商品发霉变质异物退款',1191,1],['供应商视频回调失败',1172,1],
+  ['视频中断',374,1],['已扣费要求退费',317,1],['商品破损鼠害退款',316,1],['订单多扣费',257,1],['门未关好',209,1],['订单扣费不及时',159,1]];
 
 /* ===== 一键演示：Agent 完整工作流（设备重复断网案例，11 步真实执行） ===== */
 async function runFullDemo(){
