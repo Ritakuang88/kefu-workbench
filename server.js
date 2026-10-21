@@ -237,6 +237,11 @@ const server = http.createServer(async (req, res) => {
           canDo: ['未出货扣款直接原路退款', '查询退款进度并答复'],
           needApproval: ['退款金额 > ¥500'],
           escalate: '重复扣款 3 次以上 → 升级技术排查' },
+        '不文明购物': { id: 'SOP-THF-001', ver: 'v1.0-2026.10', name: '疑似偷盗/非本人消费核实SOP', cond: '客户否认拿取商品或扣款争议，需视频核实',
+          verify: ['订单开门时间与取货视频（前后各一笔对照）', '扫码记录与拿取件数是否一致', '拿取人员穿着特征与客户自述比对'],
+          canDo: ['调取订单前后视频核对', '按非本人话术婉拒并引导报警', '登记扣款争议工单'],
+          needApproval: ['任何退款/免单动作'],
+          escalate: '客户坚持非本人且视频存疑 → 升级风控复核' },
         '重复投诉升级': { id: 'SOP-ESC-001', ver: 'v1.0-2026.10', name: '重复投诉升级SOP', cond: '系统核验 30 天内同类工单 ≥2',
           verify: ['历史同类工单处理结果', '上次承诺与兑现情况'],
           canDo: ['致歉并优先处理', '创建督办任务闭环跟进'],
@@ -251,11 +256,12 @@ const server = http.createServer(async (req, res) => {
         const custId = Number(body.customer_id || 0);
         if (!text) return bad(res, 400, '请输入客户投诉内容');
         // —— 第 1 步：智能识别（规则引擎，确定性输出） ——
+        const isTheft0 = /偷|盗|没付钱|跑单|白拿|拿走|不付|没拿|乱扣|非本人|穿着/.test(text);
         const isQual = /过期|变质|异物|发霉|质量|坏掉|破损/.test(text);
         const isRep = /补货|没货|缺货|空了|断货|上架|没有人来补/.test(text);
         const isDev = /断网|离线|用不了|不能用|故障|维修|重启|开不了|机器坏|坏了/.test(text);
         const isRef = /退款|退钱|扣了钱|多扣|退回|扣款/.test(text);
-        const type = isQual ? '商品质量' : isDev && !isQual ? '设备故障' : isRep ? '补货异常' : isRef ? '退款异常' : '其他咨询';
+        const type = isTheft0 ? '不文明购物' : isQual ? '商品质量' : isDev && !isQual ? '设备故障' : isRep ? '补货异常' : isRef ? '退款异常' : '其他咨询';
         const selfRepeat = /上次|上周|已经催|又一次|再次|每次|一直|还/.test(text);  // 客户自述曾投诉
         const angry = /投诉|曝光|工商|12315|媒体|举报|差评|受不了/.test(text);
         const severity = angry ? '较高' : selfRepeat ? '中' : '一般';
@@ -349,7 +355,7 @@ const server = http.createServer(async (req, res) => {
         const isRep = /补货|没货|缺货|空了|断货|没有人来补/.test(text);
         const isDev = /断网|离线|用不了|不能用|故障|维修|重启|开不了|机器坏|坏了/.test(text);
         const isRef = /退款|退钱|扣了钱|多扣|退回|扣款/.test(text);
-        const isTheft = /偷|盗|没付钱|跑单|白拿|拿走|不付/.test(text);  // 不文明购物/疑似偷盗
+        const isTheft = /偷|盗|没付钱|跑单|白拿|拿走|不付|没拿|乱扣|非本人|穿着/.test(text);  // 不文明购物/疑似偷盗
         const type = isTheft ? '不文明购物' : isQual ? '商品质量' : isDev && !isQual ? '设备故障' : isRep ? '补货异常' : isRef ? '退款异常' : '其他咨询';
         const catMap = {
           '商品质量': { path: '货架运营 > 商品质量 > 商品过期', risk: '投诉', urgency: '紧急' },
