@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AI 智能客服工作台</title>
 <style>
-:root{--brand:#1677ff;--brand-l:#e6f4ff;--brand-d:#0e42a6;--ink:#1f2329;--sub:#646a73;--line:#e5e6eb;--bg:#f2f3f5;--card:#fff;--red:#f53f3f;--orange:#ff7d00;--green:#00b42a;--gray-l:#fafbfc;--r:8px;--shadow:0 1px 3px rgba(0,0,0,.06)}
+:root{--brand:#d97706;--brand-l:#fffbeb;--brand-d:#b45309;--ink:#1f2329;--sub:#646a73;--line:#e5e6eb;--bg:#faf9f7;--card:#ffffff;--red:#f53f3f;--orange:#ea580c;--green:#059669;--gray-l:#fafbfc;--r:8px;--shadow:0 1px 3px rgba(0,0,0,.05)}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;font-size:14px;color:var(--ink);background:var(--bg)}
 .hidden{display:none!important}
@@ -118,10 +118,11 @@ table.tbl tr:hover td{background:#fafbfc}
 .alert-orange{background:#fff7ed;border:1px solid #fdba74;color:#9a3412;border-radius:8px;padding:8px 10px;font-size:12.5px}
 .alert-blue{background:var(--brand-l);border:1px solid #bfdbfe;color:var(--brand-d);border-radius:8px;padding:8px 10px;font-size:12.5px}
 .toast{position:fixed;top:18px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:9px 20px;border-radius:8px;font-size:13px;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,.3)}
-/* 顶栏蓝色渐变 + 角色切换器 */
-.topbar{background:linear-gradient(90deg,#0e42a6,#1677ff);color:#fff;padding:0 16px;height:52px;display:flex;gap:12px;align-items:center;position:sticky;top:0;z-index:30;box-shadow:0 2px 8px rgba(14,66,166,.25)}
+/* 顶栏暖橙渐变 + 角色切换器 */
+.topbar{background:linear-gradient(90deg,#b45309,#f59e0b);color:#fff;padding:0 16px;height:56px;display:flex;gap:12px;align-items:center;position:sticky;top:0;z-index:30;box-shadow:0 2px 8px rgba(180,83,9,.25)}
 .topbar h2{font-size:15px;margin-right:4px;white-space:nowrap}
-.topbar .logo-dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;margin-right:6px;box-shadow:0 0 0 2px rgba(0,180,42,.3)}
+.topbar .slogan{font-size:14px;font-weight:600;opacity:.95;white-space:nowrap}
+.topbar .logo-dot{width:8px;height:8px;border-radius:50%;background:#fef3c7;display:inline-block;margin-right:6px;box-shadow:0 0 0 2px rgba(254,243,199,.4)}
 .role-switch{display:flex;background:rgba(255,255,255,.16);border-radius:8px;padding:3px;margin-left:4px}
 .role-btn{border:none;background:none;padding:5px 14px;font-size:12.5px;color:rgba(255,255,255,.85);border-radius:6px;cursor:pointer;font-family:inherit}
 .role-btn.active{background:#fff;color:var(--brand);font-weight:600}
@@ -171,7 +172,7 @@ iframe.calcframe{width:100%;height:calc(100vh - 52px);border:none;background:#ff
 <div id="login" class="hidden">
   <div class="loginbox">
     <h1>🤖 AI 智能客服工作台</h1>
-    <div class="sub">让 AI 不只是回答问题，更能推动问题解决</div>
+    <div class="sub" style="font-size:14px">— 解决客诉流程的信息断层和协同效率问题</div>
     <input id="li_user" placeholder="账号">
     <input id="li_pass" type="password" placeholder="密码" onkeydown="if(event.key==='Enter')doLogin()">
     <div class="err" id="li_err"></div>
@@ -197,14 +198,14 @@ iframe.calcframe{width:100%;height:calc(100vh - 52px);border:none;background:#ff
     <!-- ===== AI 智能处理（参赛核心：Agent 完整工作流） ===== -->
     <section class="view" id="view-ai">
       <div class="topbar">
-        <h2><span class="logo-dot"></span>AI 智能客服工作台</h2>
-        <span style="font-size:12.5px;color:rgba(255,255,255,.75)">让 AI 不只是回答问题，更能推动问题解决</span>
+        <h2><span class="logo-dot"></span>AI 智能客服工作台</h2><span class="slogan">— 解决客诉流程的信息断层和协同效率问题</span>
+        <button class="btn btn-sm" style="margin-left:auto" onclick="runFullDemo()">🎬 一键演示：Agent 完整工作流（设备重复断网案例）</button>
       </div>
       <div style="padding:12px;display:grid;grid-template-columns:400px 1fr;gap:10px;align-items:start">
         <div>
           <div class="card" style="padding:12px">
-            <h3>💬 输入客户投诉</h3>
-            <textarea id="aiText" rows="6" placeholder="粘贴或输入客户的投诉原话，AI 将自动识别 → 查库 → 匹配 SOP → 生成处理方案" style="width:100%"></textarea>
+            <h3>💬 AI 工单助手 · 输入客户问题</h3>
+            <textarea id="aiText" rows="6" placeholder="粘贴或输入客户的投诉原话，AI 将自动识别 → 查库 → 匹配 SOP → 预填工单（全部字段可人工修改）→ 确认创建" style="width:100%"></textarea>
             <div class="fld" style="margin-top:8px"><label>关联客户（AI 将真实查询该客户数据）</label><select id="aiCust"></select></div>
             <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
               <button class="btn btn-primary" id="aiGoBtn" onclick="runAiAnalyze()">🚀 开始 AI 分析</button>
@@ -212,7 +213,7 @@ iframe.calcframe{width:100%;height:calc(100vh - 52px);border:none;background:#ff
             </div>
           </div>
           <div class="card" style="padding:12px">
-            <h3>🎬 体验 Agent 完整工作流（三个演示案例）</h3>
+            <h3>🎬 体验 Agent 完整工作流</h3>
             <div id="aiCases"></div>
           </div>
         </div>
@@ -223,7 +224,7 @@ iframe.calcframe{width:100%;height:calc(100vh - 52px);border:none;background:#ff
     <!-- ===== 一线工作台 ===== -->
     <section class="view" id="view-front">
       <div class="topbar">
-        <h2><span class="logo-dot"></span>AI 智能客服工作台</h2>
+        <h2><span class="logo-dot"></span>AI 智能客服工作台</h2><span class="slogan">— 解决客诉流程的信息断层和协同效率问题</span>
         <div class="role-switch" id="roleSwitch"></div>
         <select id="sType" style="max-width:110px"><option>手机号</option><option>客户ID</option><option>货架编码</option><option>售后订单号</option></select>
         <input id="sKey" placeholder="输入后回车查询，三栏同步刷新" style="flex:1;min-width:180px" onkeydown="if(event.key==='Enter')doSearch()">
@@ -258,7 +259,7 @@ iframe.calcframe{width:100%;height:calc(100vh - 52px);border:none;background:#ff
     <!-- ===== 二线工作台 ===== -->
     <section class="view" id="view-second">
       <div class="topbar">
-        <h2><span class="logo-dot"></span>AI 智能客服工作台</h2>
+        <h2><span class="logo-dot"></span>AI 智能客服工作台</h2><span class="slogan">— 解决客诉流程的信息断层和协同效率问题</span>
         <div class="role-switch" id="roleSwitch2"></div>
         <span style="font-size:12.5px;color:rgba(255,255,255,.75);margin-left:auto">受理队列 → 点选工单弹出处理窗；中栏可直接查询业务模块；右栏录入理赔闭环</span>
         <button class="btn btn-sm" onclick="loadAll()">🔄 刷新</button>
@@ -290,12 +291,16 @@ iframe.calcframe{width:100%;height:calc(100vh - 52px);border:none;background:#ff
     <!-- ===== 管理层 ===== -->
     <section class="view" id="view-manager">
       <div class="topbar">
-        <h2><span class="logo-dot"></span>AI 智能客服工作台</h2>
+        <h2><span class="logo-dot"></span>AI 智能客服工作台</h2><span class="slogan">— 解决客诉流程的信息断层和协同效率问题</span>
         <div class="role-switch" id="roleSwitch3"></div>
         <span style="font-size:12.5px;color:rgba(255,255,255,.75);margin-left:auto">只读视图，处理操作请到二线工作台</span>
       </div>
       <div class="statgrid" id="stats"></div>
       <div style="padding:0 12px">
+        <div class="card">
+          <h3>⏱ 剔时分析 · 二线客服额外耗时（5-6月真实脱敏数据） <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="loadTiming()">刷新分析</button></h3>
+          <div id="timingBody" class="mini" style="padding:8px 0">点击刷新，基于剔时表真实数据统计：质量预处理/质量单+售后退款/看视频定位等额外耗时分布与 AI 节省测算。</div>
+        </div>
         <div class="card">
           <h3>🧠 VOC 运营洞察 <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="genInsight()">AI 生成运营洞察</button></h3>
           <div id="vocBody" class="mini" style="padding:8px 0">点击按钮，AI 基于真实工单统计生成运营洞察（程序计算数据，AI 负责解释与建议，不编造数字）。</div>
@@ -332,7 +337,7 @@ iframe.calcframe{width:100%;height:calc(100vh - 52px);border:none;background:#ff
     <!-- ===== 用户管理 ===== -->
     <section class="view" id="view-users">
       <div class="topbar">
-        <h2><span class="logo-dot"></span>AI 智能客服工作台</h2>
+        <h2><span class="logo-dot"></span>AI 智能客服工作台</h2><span class="slogan">— 解决客诉流程的信息断层和协同效率问题</span>
         <span style="font-size:13px;margin-left:12px">用户管理</span>
         <button class="btn btn-sm" style="margin-left:auto" onclick="renderUsers()">刷新</button>
       </div>
@@ -342,7 +347,7 @@ iframe.calcframe{width:100%;height:calc(100vh - 52px);border:none;background:#ff
     <!-- ===== 数据浏览 ===== -->
     <section class="view" id="view-data">
       <div class="topbar">
-        <h2><span class="logo-dot"></span>AI 智能客服工作台</h2>
+        <h2><span class="logo-dot"></span>AI 智能客服工作台</h2><span class="slogan">— 解决客诉流程的信息断层和协同效率问题</span>
         <span style="font-size:13px;margin-left:12px">数据浏览器 · 各业务表最近 50 条</span>
         <button class="btn btn-sm" style="margin-left:auto" onclick="renderDataBrowser()">刷新</button>
       </div>
@@ -499,7 +504,7 @@ async function loadAll(){
   $('fRegion').innerHTML='<option value="">全部大区</option>'+regions.map(function(x){return '<option>'+esc(x)+'</option>';}).join('');
   if($('view-front').classList.contains('on')||S.views.includes('front'))renderFront();
   if(S.views.includes('second')){renderQueue();renderClosureForm();renderCustBrief();renderBiz('bizTabs2','bizBody2','bizTab2');}
-  if(S.views.includes('manager')){renderStats();renderMgrTable();renderSlaCheck();renderSupTable();}
+  if(S.views.includes('manager')){renderStats();renderMgrTable();renderSlaCheck();renderSupTable();loadTiming();}
   renderAiBar();
 }
 
@@ -523,18 +528,19 @@ async function runAiAnalyze(){
   var text=$('aiText').value.trim();
   if(!text){toast('请输入客户投诉内容');return;}
   var btn=$('aiGoBtn');btn.disabled=true;btn.textContent='AI 分析中…';
-  $('aiResult').innerHTML='<div class="card"><div class="mini" style="padding:30px;text-align:center">🤖 Agent 正在执行：识别诉求 → 查询业务数据 → 匹配 SOP → 生成处理方案…</div></div>';
+  $('aiResult').innerHTML='<div class="card"><div class="mini" style="padding:30px;text-align:center">🤖 Agent 正在执行：识别诉求 → 查询业务数据 → 匹配 SOP → 预填工单…</div></div>';
   try{
     var r=await post('/api/ai/analyze',{text:text,customer_id:+$('aiCust').value});
-    renderAiResult(r);
+    var pf=await post('/api/ai/prefill',{text:text,customer_id:+$('aiCust').value}).catch(function(){return null;});
+    renderAiResult(r,pf);
     $('aiMode').textContent='当前模式：'+r.mode;
   }catch(e){$('aiResult').innerHTML='<div class="card"><div class="mini" style="color:var(--red);padding:16px">分析失败：'+esc(e.message)+'，请重试</div></div>';}
   btn.disabled=false;btn.textContent='🚀 开始 AI 分析';
 }
-function renderAiResult(r){
+function renderAiResult(r,pf){
   var c=r.classify;
   var html='<div class="card" style="padding:12px">';
-  html+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><span class="tag tag-'+(r.llmUsed?'green':'blue')+'">'+(r.llmUsed?'千问大模型增强':'演示模式·规则引擎')+'</span><span class="mini">工具查库为真实执行，非 AI 编造</span></div>';
+  html+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><span class="tag tag-'+(r.llmUsed?'green':'orange')+'">'+(r.llmUsed?'千问大模型增强':'演示模式·规则引擎')+'</span><span class="mini">工具查库为真实执行；固定规则判断与模拟数据均已标注</span></div>';
   /* 步骤 1：智能识别 */
   html+='<div class="tl"><div class="tl-item"><div class="tl-hd">第 1 步 · 智能识别</div><div class="tl-bd">'+
     '<div class="kv"><span>客诉类型</span><b>'+esc(c.type)+'</b></div>'+
@@ -566,34 +572,51 @@ function renderAiResult(r){
     '<div><span class="tag tag-blue">建议动作</span>'+p.actions.map(function(f,i){return '<div class="mini" style="padding:2px 0 2px 8px">'+(i+1)+'. '+esc(f)+'</div>';}).join('')+'</div>'+
     (c.llmNote?'<div class="alert-blue" style="margin-top:6px">🤖 '+esc(c.llmNote)+'</div>':'')+
     '</div></div>';
-  /* 步骤 5：人工确认执行 */
-  html+='<div class="tl-item todo"><div class="tl-hd">第 5 步 · 人工确认并执行（高风险动作需人工确认）</div><div class="tl-bd">'+
+  /* 步骤 5：AI 预填工单 + 人工确认执行 */
+  var P=pf&&pf.prefill?pf.prefill:{cat_path:'',risk:c.angry?'投诉':'咨询',urgency:'一般',shelf_code:'',shelf_id:'',demand:text0Safe()};
+  var opts=function(arr,cur){return arr.map(function(o){return '<option'+(o===cur?' selected':'')+'>'+esc(o)+'</option>';}).join('');};
+  html+='<div class="tl-item todo"><div class="tl-hd">第 5 步 · AI 预填工单（所有字段可人工修改）+ 确认执行</div><div class="tl-bd">'+
+    '<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;margin-bottom:8px">'+
+    '<div class="grid2" style="gap:6px">'+
+    '<div class="fld"><label>工单分类 <span class="mini">（AI 推荐，可改）</span></label><input id="pfCat" value="'+esc(P.cat_path)+'"></div>'+
+    '<div class="fld"><label>风险标识</label><select id="pfRisk">'+opts(['咨询','投诉','舆情风险','监管风险'],P.risk)+'</select></div>'+
+    '<div class="fld"><label>紧急程度</label><select id="pfUrg">'+opts(['一般','紧急','非常紧急'],P.urgency)+'</select></div>'+
+    '<div class="fld"><label>货架编码</label><input id="pfShelf" value="'+esc(P.shelf_code)+'"></div>'+
+    '<div class="fld"><label>货架ID</label><input id="pfShelfId" value="'+esc(P.shelf_id)+'"></div>'+
+    '<div class="fld"><label>业务类型</label><select id="pfBiz">'+opts(['B端','C端'],'B端')+'</select></div>'+
+    '</div>'+
+    '<div class="fld"><label>客户诉求（AI 提取，可改）</label><textarea id="pfDemand" rows="2">'+esc(P.demand)+'</textarea></div>'+
+    '<div class="fld"><label>工单内容（内部记录）</label><textarea id="pfContent" rows="2">[AI 辅助] '+esc((r.plan&&r.plan.facts?r.plan.facts.join('；'):'').slice(0,150))+'</textarea></div>'+
+    '</div>'+
+    (pf&&pf.hints&&pf.hints.needVideo?'<div class="alert-orange" style="margin-bottom:8px">📹 '+esc(pf.hints.videoNote||'需调取订单前后视频核对')+(pf.hints.order?('｜最近订单：<b class="mono">'+esc(pf.hints.order.no)+'</b> '+esc(pf.hints.order.open_time||'')+'（可从该订单前后视频入手）'):'')+'</div>':'')+
+    (pf&&pf.hints&&pf.hints.missing&&pf.hints.missing.length?'<div class="alert-orange" style="margin-bottom:8px">⚠ 还需向客户核实：'+esc(pf.hints.missing.join('、'))+'</div>':'')+
     '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
-    '<button class="btn btn-primary btn-sm" id="aiActTicket" onclick="aiCreateTicket()">创建工单</button>'+
+    '<button class="btn btn-primary btn-sm" id="aiActTicket" onclick="aiCreateTicket()">✔ 人工确认 · 创建工单（真实写入）</button>'+
     '<button class="btn btn-sm" id="aiActUrge" onclick="aiUrge()">生成催办</button>'+
     '<button class="btn btn-sm" id="aiActSup" onclick="aiSupervise()">创建督办任务</button>'+
     '<button class="btn btn-sm" onclick="aiCopyReply()">复制客服回复</button>'+
-    '<button class="btn btn-sm" style="background:var(--gray-l)" onclick="toast(\'已保存为稍后处理\')">稍后处理</button>'+
-    '</div><div class="mini" id="aiActLog" style="margin-top:6px">执行结果将在此显示并真实写入数据库</div></div></div>';
+    '</div><div class="mini" id="aiActLog" style="margin-top:6px">高风险动作（赔付/退款/关单）需人工在工单中另行审批，AI 不自行执行</div></div></div>';
   html+='</div>';
-  window._aiLast=r;
+  window._aiLast=r;window._aiPrefill=pf;
   $('aiResult').innerHTML=html;
 }
+function text0Safe(){return ($('aiText').value||'').slice(0,120);}
 async function aiCreateTicket(){
   var r=window._aiLast;if(!r)return;
   var btn=$('aiActTicket');if(btn.disabled)return;
   btn.disabled=true;btn.textContent='创建中…';
   try{
     var no='GD'+new Date().toISOString().slice(0,10).replace(/-/g,'')+String(Math.floor(Math.random()*900+100));
-    var catMap={'设备故障':'货架运营 > 设备断网 > 设备重启无效','补货异常':'货架运营 > 补货缺货 > 催补货未响应','商品质量':'货架运营 > 商品质量 > 商品过期','退款异常':'客诉售后 > 售后 > 退款退货申请','其他咨询':'客诉售后 > 客诉 > 处理时效投诉'};
-    var cat=S.cats.find(function(x){return x.path===catMap[r.classify.type];});
+    var catPath=$('pfCat')?$('pfCat').value:(r.sopMatch[0]&&r.sopMatch[0].name?catPathOf(r.classify.type):'');
+    var cat=S.cats.find(function(x){return x.path===catPath;});
     var cust=S.customers.find(function(x){return x.id===+$('aiCust').value;})||S.customers[0];
-    var t=await post('/api/tickets',{ticket_no:no,customer_id:cust.id,customer_name:cust.name,region:cust.region,channel:'AI 智能处理',biz_type:'B端',cat_path:cat?cat.path:(catMap[r.classify.type]||''),cat_code:cat?cat.code:'',shelf_id:'',shelf_code:'',risk:r.classify.angry?'投诉':'咨询',urgency:r.classify.severity==='较高'?'紧急':'一般',escalate:r.classify.angry||r.classify.sysRepeat,role:'店主',demand:$('aiText').value.slice(0,200),content:'[AI 智能处理] '+r.plan.facts.join('；').slice(0,200),visible_content:'',status:'待受理',handler:null,creator:'AI 助手（'+S.me.name+' 确认）',sla_hours:r.classify.severity==='较高'?4:24});
-    await post('/api/ticket_events',{ticket_id:t.id,actor:S.me.name,action:'建单（AI 辅助）',detail:'AI 识别类型：'+r.classify.type+'；'+r.plan.actions[0]});
-    $('aiActLog').innerHTML+='✓ 工单已创建：<b class="mono">'+esc(no)+'</b>（已写入数据库） ';
-    await reloadTickets();toast('工单已创建：'+no);
-  }catch(e){btn.disabled=false;btn.textContent='创建工单';$('aiActLog').innerHTML+='<span style="color:var(--red)">✗ '+esc(e.message)+'</span> ';}
+    var t=await post('/api/tickets',{ticket_no:no,customer_id:cust.id,customer_name:cust.name,region:cust.region,channel:'AI 工单助手',biz_type:($('pfBiz')?$('pfBiz').value:'B端'),cat_path:catPath||'客诉售后 > 客诉 > 处理时效投诉',cat_code:cat?cat.code:'',shelf_id:($('pfShelfId')?$('pfShelfId').value:''),shelf_code:($('pfShelf')?$('pfShelf').value:''),risk:($('pfRisk')?$('pfRisk').value:'咨询'),urgency:($('pfUrg')?$('pfUrg').value:'一般'),escalate:r.classify.angry||r.classify.sysRepeat,role:'店主',demand:($('pfDemand')?$('pfDemand').value:'').slice(0,200),content:($('pfContent')?$('pfContent').value:'[AI 辅助]').slice(0,500),visible_content:'',status:'待受理',handler:null,creator:'AI 助手（'+S.me.name+' 确认）',sla_hours:r.classify.severity==='较高'?4:24});
+    await post('/api/ticket_events',{ticket_id:t.id,actor:S.me.name,action:'建单（AI 预填 + 人工确认）',detail:'AI 识别类型：'+r.classify.type+'；'+(r.plan.actions[0]||'')});
+    $('aiActLog').innerHTML+='<br>✓ 工单已创建并写入数据库：<b class="mono">'+esc(no)+'</b> → 已自动进入二线受理队列';
+    await reloadTickets();toast('工单已创建：'+no+'（二线队列可见）');
+  }catch(e){btn.disabled=false;btn.textContent='✔ 人工确认 · 创建工单（真实写入）';$('aiActLog').innerHTML+='<br><span style="color:var(--red)">✗ '+esc(e.message)+'</span>';}
 }
+function catPathOf(type){var m={'设备故障':'货架运营 > 设备断网 > 货架频繁断网','补货异常':'货架运营 > 补货缺货 > 催补货未响应','商品质量':'货架运营 > 商品质量 > 商品过期','退款异常':'客诉售后 > 售后 > 退款退货申请','不文明购物':'客诉售后 > 售后 > 商品仅退款'};return m[type]||'客诉售后 > 客诉 > 处理时效投诉';}
 async function aiUrge(){
   var r=window._aiLast;if(!r)return;
   var btn=$('aiActUrge');if(btn.disabled)return;
@@ -626,7 +649,59 @@ function aiCopyReply(){
   navigator.clipboard&&navigator.clipboard.writeText(r.plan.reply);toast('客服回复已复制到剪贴板');
 }
 
-/* ===== SLA 督办巡检 + 督办台账 + VOC 洞察 ===== */
+/* ===== 一键演示：Agent 完整工作流（设备重复断网案例，11 步真实执行） ===== */
+async function runFullDemo(){
+  toast('演示开始：设备重复断网案例（全部真实执行）');
+  $('aiText').value=DEMO_CASES[0].text;
+  $('aiCust').value=DEMO_CASES[0].cust;
+  await runAiAnalyze();
+  // 等渲染后逐步高亮：自动执行 人工确认→建单→二线受理→督办→统计变化
+  await sleep(600);
+  var m=modal('<h3 style="margin-bottom:8px">🎬 Agent 完整工作流演示 · 执行清单</h3><div class="tl" id="demoTl">'+
+    ['① 识别设备断网投诉（规则引擎）','② get_equipment_status() 查设备状态（真实查库）','③ get_ticket_history() 查历史工单（真实查库）','④ 识别重复故障线索（系统核验）','⑤ search_sop() 检索 SOP-DEV-001（规则匹配）','⑥ 推荐工单三级分类（可人工修改）','⑦ 自动预填工单字段 ✓ 已在右侧展示'].map(function(s){return '<div class="tl-item"><div class="tl-bd">'+s+'</div></div>';}).join('')+
+    '<div class="tl-item todo"><div class="tl-bd"><b>接下来人工确认执行：</b></div></div></div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">'+
+    '<button class="btn btn-primary btn-sm" id="demoGo1">第 8-9 步：人工确认创建工单 → 进入二线队列</button>'+
+    '<button class="btn btn-sm" id="demoGo2" disabled>第 10 步：创建督办任务</button>'+
+    '<button class="btn btn-sm" id="demoGo3" disabled>第 11 步：查看管理层数据变化</button></div>',640);
+  m.querySelector('#demoGo1').onclick=async function(){
+    await aiCreateTicket();
+    m.querySelector('#demoTl').innerHTML+='<div class="tl-item"><div class="tl-bd">⑧ 工单已创建并写入数据库（create_ticket 真实执行）</div></div><div class="tl-item"><div class="tl-bd">⑨ 二线工作台受理队列已出现新工单（同一数据源联动）——可切到「二线工单」验证</div></div>';
+    m.querySelector('#demoGo2').disabled=false;this.disabled=true;toast('工单已创建，二线队列已联动');
+  };
+  m.querySelector('#demoGo2').onclick=async function(){
+    await aiSupervise();
+    m.querySelector('#demoTl').innerHTML+='<div class="tl-item"><div class="tl-bd">⑩ 督办任务已创建并保存（create_followup_task 真实执行）——管理层督办台账可查</div></div>';
+    m.querySelector('#demoGo3').disabled=false;this.disabled=true;toast('督办任务已落库');
+  };
+  m.querySelector('#demoGo3').onclick=async function(){
+    await loadAll();
+    var tks=S.tickets,today=tks.filter(function(t){return String(t.created_at).slice(0,10)===new Date().toISOString().slice(0,10);}).length;
+    m.querySelector('#demoTl').innerHTML+='<div class="tl-item"><div class="tl-bd">⑪ 管理层数据已更新：工单总数 '+tks.length+' 张（今日新增 '+today+'）· 统计卡/SLA 巡检/VOC 洞察同步刷新 —— 可切到「管理层」验证前后变化</div></div><div class="tl-item"><div class="tl-bd"><b>✅ 演示完成：识别→查库→SOP→预填→确认→建单→二线→督办→管理层 全链路真实执行</b></div></div>';
+    this.disabled=true;toast('管理层数据已更新，演示完成');
+  };
+}
+function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
+
+/* ===== 剔时分析 ===== */
+async function loadTiming(){
+  var el=$('timingBody');if(!el)return;
+  el.textContent='正在统计剔时数据…';
+  try{
+    var r=await api('/api/ai/timing');
+    if(r.empty){el.innerHTML='<div class="alert-orange">'+esc(r.message)+'</div>';return;}
+    var maxCat=r.byCat[0]?r.byCat[0][1]:1;
+    var bars=r.byCat.slice(0,6).map(function(x){return '<div style="display:flex;align-items:center;gap:8px;padding:2px 0"><span style="width:130px;font-size:12.5px">'+esc(x[0])+'</span><div style="flex:1;background:var(--gray-l);border-radius:4px;height:14px"><div style="width:'+Math.round(x[1]/maxCat*100)+'%;height:100%;background:linear-gradient(90deg,#f59e0b,#d97706);border-radius:4px"></div></div><b style="width:70px;text-align:right">'+x[1].toFixed(0)+'h</b></div>';}).join('');
+    var notes=r.byNote.slice(0,6).map(function(x){return '<span class="chip">'+esc(x[0])+' · '+x[1].toFixed(1)+'h</span>';}).join('');
+    var q=r.quality;
+    el.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">'+
+    '<div><div class="mini" style="font-weight:700;margin-bottom:4px">工作项耗时分布（总 '+r.totalHours+'h / '+r.totalRows+' 条）</div>'+bars+
+    '<div class="mini" style="margin-top:8px">高频备注：'+notes+'</div></div>'+
+    '<div><div class="mini" style="font-weight:700;margin-bottom:4px">AI 节省测算（质量/视频排查类）</div>'+
+    '<div class="alert-blue" style="margin-bottom:6px"><b>'+q.qualCount+' 条质量类记录共 '+q.qualHours.toFixed(1)+'h</b>（质量预处理/质量单+售后退款/效期质量）<br>按 AI 预填+证据预取保守节省 40% 估算：<b>约 '+q.savedEst+'h/两月</b>（≈'+(q.savedEst/2).toFixed(1)+'h/月）<br><span class="mini">'+esc(q.estLabel)+'</span></div>'+
+    '<div class="mini">痛点对应：商品质量/不文明购物类需人工翻看订单前后视频定位，AI 助手已预取最近订单并提示视频排查路径（见 AI 工单助手第 5 步）。</div></div></div>';
+  }catch(e){el.innerHTML='<span style="color:var(--red)">'+esc(e.message)+'</span>';}
+}
 function renderSlaCheck(){
   var el=$('slaCheck');if(!el)return;
   var list=S.tickets.filter(function(t){var l=slaLeft(t);return t.status!=='已完结'&&(l<8||l<0);}).map(function(t){return {t:t,l:slaLeft(t)};});
