@@ -37,7 +37,7 @@ const TABLES = [
 ];
 
 // 视图：front=一线工作台 second=二线工作台 manager=管理层 calc=理赔计算器(静态)
-const ALL_VIEWS = ['front', 'second', 'manager', 'calc', 'ai', 'video'];
+const ALL_VIEWS = ['front', 'second', 'manager', 'calc', 'ai', 'video', 'tickets'];
 // API 前缀 → 需要的视图（数组=任一视图命中即可访问）
 const VIEW_API_PREFIX = {};
 TABLES.forEach(t => { VIEW_API_PREFIX[t.name] = t.views; });
@@ -46,11 +46,11 @@ TABLES.forEach(t => { VIEW_API_PREFIX[t.name] = t.views; });
 const ADMIN_ONLY_PATHS = ['/api/users', '/api/admin'];
 // 角色 → 默认视图；member 可被 admin 追加授权的视图
 const DEFAULT_VIEWS_BY_ROLE = {
-  agent: ['front', 'ai', 'calc', 'video'],      // 一线客服
-  handler: ['second', 'ai', 'calc', 'video'],   // 二线工单
-  member: ['front', 'ai', 'calc', 'video'],     // 兼容默认注册角色
+  agent: ['front', 'ai', 'calc', 'video', 'tickets'],      // 一线客服
+  handler: ['second', 'ai', 'calc', 'video', 'tickets'],   // 二线工单
+  member: ['front', 'ai', 'calc', 'video', 'tickets'],     // 兼容默认注册角色
 };
-const GRANTABLE_VIEWS = ['front', 'second', 'calc', 'manager', 'ai', 'video'];
+const GRANTABLE_VIEWS = ['front', 'second', 'calc', 'manager', 'ai', 'video', 'tickets'];
 const VALID_ROLES = ['admin', 'agent', 'handler', 'member'];
 
 /* ============ 以下勿动 ============ */
@@ -450,6 +450,11 @@ const server = http.createServer(async (req, res) => {
       }
 
 
+      // ---- 坐席列表（工单分配下拉，仅昵称不含敏感字段） ----
+      if (p === '/api/handlers' && req.method === 'GET') {
+        const rows = await sb('GET', 'users', { select: 'nick,role', filters: [['status', 'eq.approved']] }).catch(() => []);
+        return ok(res, rows.map(r => r.nick || r.role));
+      }
       // ---- 关联工单查询（建单防重 / 详情关联提示的数据底座）----
       const groupOf = s => { s = String(s || '');
         if (/多扣|数量识别|重复扣费|扣费不及时|已扣费/.test(s)) return '识别错误多扣';

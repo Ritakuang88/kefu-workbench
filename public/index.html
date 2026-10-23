@@ -182,6 +182,12 @@ details.card>.det-bd{padding:0 14px 14px}
 @keyframes fabpulse{0%{box-shadow:0 6px 20px rgba(245,63,63,.5),0 0 0 0 rgba(245,63,63,.4)}70%{box-shadow:0 6px 20px rgba(245,63,63,.5),0 0 0 14px rgba(245,63,63,0)}100%{box-shadow:0 6px 20px rgba(245,63,63,.5),0 0 0 0 rgba(245,63,63,0)}}
 /* 卡片轻阴影 */
 .card{box-shadow:var(--shadow)}
+.tk-drawer{position:fixed;top:0;right:0;bottom:0;width:min(1120px,72vw);background:#fff;z-index:70;box-shadow:-8px 0 30px rgba(0,0,0,.18);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .2s ease}
+.tk-drawer.open{transform:none}
+.tk-hd{padding:12px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;background:#fafbfc}
+.tk-bd{flex:1;overflow-y:auto;padding:14px 18px;display:grid;grid-template-columns:1fr 320px;gap:14px;align-items:start}
+@media(max-width:1100px){.tk-bd{grid-template-columns:1fr}}
+.tk-tabs{display:flex;gap:2px;background:#f0f2f5;border-radius:8px;padding:3px}
 /* 视频时间轴标记 */
 .vmark{position:absolute;top:4px;width:3px;height:26px;cursor:pointer;transform:translateX(-50%)}
 .vmark .vlab{position:absolute;top:-1px;left:6px;font-size:10px;color:#ccc;white-space:nowrap}
@@ -362,6 +368,38 @@ iframe.calcframe{width:100%;height:calc(100vh - 52px);border:none;background:#ff
       <iframe class="calcframe" src="/calculator.html" id="calcFrame"></iframe>
     </section>
 
+    <!-- ===== 工单管理（复刻 Kimi /tickets） ===== -->
+    <section class="view" id="view-tickets">
+      <div class="topbar">
+        <h2><span class="logo-dot"></span>AI 智能客服工作台</h2><span class="slogan">— 解决客诉流程的信息断层和协同效率问题</span>
+        <div style="margin-left:auto;position:relative"><input id="tkKw" placeholder="🔍 单号 / 手机号 / 内容" style="width:240px" oninput="TK.kw=this.value;TK.page=1;renderTickets()"></div>
+      </div>
+      <div style="padding:14px 16px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+          <div><div style="font-size:18px;font-weight:700">工单管理</div><div class="mini">一线建单 → 二线处理 → 跟进完结，全流程留痕</div></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+          <div class="tk-tabs" id="tkTabs"></div>
+          <div class="tk-tabs" id="tkQueue"></div>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden">
+          <div style="overflow-x:auto" id="tkWrap"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding:10px 14px;font-size:13px;color:var(--sub)">
+            <span id="tkCount">共 0 条</span>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn btn-sm" id="tkPrev" onclick="TK.page--;renderTickets()">上一页</button>
+              <span id="tkPageInfo">1 / 1</span>
+              <button class="btn btn-sm" id="tkNext" onclick="TK.page++;renderTickets()">下一页</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tk-drawer" id="tkDrawer">
+        <div class="tk-hd"><div id="tkdTitle" style="font-size:15px"></div><span class="link" onclick="closeTkDrawer()">✕ 关闭</span></div>
+        <div class="tk-bd"><div id="tkdLeft"></div><div id="tkdRight"></div></div>
+      </div>
+    </section>
+
     <!-- ===== 视频复核 ===== -->
     <section class="view" id="view-video">
       <div class="topbar">
@@ -431,7 +469,7 @@ const patch=(p,b)=>api(p,{method:'PATCH',body:JSON.stringify(b||{})});
 
 /* ===== 全局状态 ===== */
 var S={me:null,views:[],customers:[],cats:[],catTree:{},cur:null,tickets:[],events:[],closures:[],shelves:[],devices:[],contracts:[],settlements:[],trades:[],reps:[],wishes:[],supervisions:[],reviews:[],calcs:[],curTicket:null,qFilter:'全部',bizTab:'货架',bizTab2:'货架'};
-var VIEWS_META={front:'☎️ 一线工作台',second:'🧾 二线工单',manager:'📊 管理层',calc:'🧮 理赔计算器',users:'👥 用户管理',data:'🗂 数据浏览',ai:'🤖 AI 智能处理',video:'📹 视频复核'};
+var VIEWS_META={front:'☎️ 一线工作台',second:'🧾 二线工单',manager:'📊 管理层',calc:'🧮 理赔计算器',users:'👥 用户管理',data:'🗂 数据浏览',ai:'🤖 AI 智能处理',video:'📹 视频复核',tickets:'📋 工单管理'};
 
 /* ===== 登录/导航 ===== */
 function showLogin(){$('login').classList.remove('hidden');$('app').classList.add('hidden');}
@@ -449,7 +487,7 @@ async function boot(){
   var cf=$('calcFrame'); if(cf) cf.src='/calculator.html?embed=1&user='+encodeURIComponent(S.me.name);
   renderRoleSwitch();
   var nav=$('nav');nav.innerHTML='';
-  var order=['ai','front','second','video','manager','calc','users','data'];
+  var order=['ai','front','second','tickets','video','manager','calc','users','data'];
   order.forEach(function(v){
     if(!S.views.includes(v))return;
     var d=document.createElement('div');d.className='nav-item';d.textContent=VIEWS_META[v];d.id='nav-'+v;
@@ -465,6 +503,7 @@ function switchView(v){
   document.querySelectorAll('.nav-item').forEach(function(x){x.classList.remove('on');});
   var n=$('nav-'+v);if(n)n.classList.add('on');
   renderRoleSwitch();
+  if(v==='tickets')renderTickets();
 }
 /* 顶栏角色切换器（按权限渲染，跨视图常驻） */
 var ROLE_TABS=[['ai','AI 处理'],['front','一线客服'],['second','二线工单'],['manager','管理层'],['calc','理赔计算器']];
@@ -561,6 +600,7 @@ async function loadAll(){
   if(S.views.includes('manager')){renderStats();renderMgrTable();renderSlaCheck();renderSupTable();}
   renderAiBar();
   if(S.views.includes('video'))initVrPage();
+  if(S.views.includes('tickets'))renderTickets();
 }
 
 /* ===== AI 智能处理视图 ===== */
@@ -1656,6 +1696,121 @@ async function submitVideoReview(){
   S.reviews=await api('/api/video_reviews');
   toast('复核结论已提交（'+verdict+'）');$('vrNote').value='';
   initVrPage();
+}
+
+/* ===== v7：工单管理页 + 大抽屉（复刻 Kimi /tickets） ===== */
+function maskPhone(p){p=String(p||'');return p.length>=7?p.slice(0,3)+'****'+p.slice(-4):(p||'-');}
+function maskName(n){n=String(n||'');return n.length>1?n[0]+'**':(n||'-');}
+function urgeCountOf(id){return S.events.filter(function(e){return e.ticket_id===id&&/催办/.test(e.action);}).length;}
+var TK={status:'',queue:'',kw:'',page:1};
+var TK_STATUSES=['待受理','处理中','待回访','已挂起','已完结'];
+function tkFiltered(){
+  var list=S.tickets.slice();
+  if(TK.status)list=list.filter(function(t){return t.status===TK.status;});
+  if(TK.queue==='frontline')list=list.filter(function(t){return !t.handler;});
+  if(TK.queue==='secondline')list=list.filter(function(t){return !!t.handler;});
+  if(TK.kw){var k=TK.kw.trim();list=list.filter(function(t){return String(t.ticket_no).indexOf(k)>=0||String(t.content||'').indexOf(k)>=0||String(t.customer_name||'').indexOf(k)>=0||String(t.cat_path||'').indexOf(k)>=0;});}
+  return list.sort(function(a,b){return String(b.created_at).localeCompare(String(a.created_at));});
+}
+function renderTickets(){
+  var wrap=$('tkWrap');if(!wrap)return;
+  var counts={};TK_STATUSES.forEach(function(s){counts[s]=S.tickets.filter(function(t){return t.status===s;}).length;});
+  $('tkTabs').innerHTML=[''].concat(TK_STATUSES).map(function(s){return '<button class="role-btn'+(TK.status===s?' active':'')+'" style="background:'+(TK.status===s?'#fff':'transparent')+'" onclick="TK.status=\''+s+'\';TK.page=1;renderTickets()">'+(s||'全部')+(s?' <span style="opacity:.7">'+counts[s]+'</span>':'')+'</button>';}).join('');
+  $('tkQueue').innerHTML=[['','全部队列'],['frontline','一线'],['secondline','二线']].map(function(q){return '<button class="role-btn'+(TK.queue===q[0]?' active':'')+'" style="background:'+(TK.queue===q[0]?'#fff':'transparent')+'" onclick="TK.queue=\''+q[0]+'\';TK.page=1;renderTickets()">'+q[1]+'</button>';}).join('');
+  var list=tkFiltered();
+  var ps=10,total=list.length,pages=Math.max(1,Math.ceil(total/ps));
+  if(TK.page>pages)TK.page=pages;
+  var rows=list.slice((TK.page-1)*ps,TK.page*ps);
+  $('tkCount').textContent='共 '+total+' 条';
+  $('tkPageInfo').textContent=TK.page+' / '+pages;
+  $('tkPrev').disabled=TK.page<=1;$('tkNext').disabled=TK.page>=pages;
+  if(!rows.length){wrap.innerHTML='<div style="padding:40px 0;text-align:center;color:var(--sub)"><div style="font-size:22px;margin-bottom:6px">🎫</div>暂无工单<div class="mini">调整筛选条件，或到一线工作台/AI 助手新建工单</div></div>';return;}
+  wrap.innerHTML='<table class="tbl"><thead><tr><th>工单号</th><th>分类 / 内容</th><th>联系人</th><th>状态</th><th>队列</th><th>处理人</th><th>创建时间</th></tr></thead><tbody>'+
+    rows.map(function(t){
+      var cust=S.customers.find(function(c){return c.id===t.customer_id;});
+      var uc=urgeCountOf(t.id);
+      return '<tr style="cursor:pointer" onclick="openTkDrawer('+t.id+')">'+
+        '<td><span class="mono">'+esc(t.ticket_no)+'</span>'+(t.escalate?' <span class="tag tag-red">升</span>':'')+(uc>0?' <span class="tag tag-orange">催×'+uc+'</span>':'')+'</td>'+
+        '<td style="max-width:320px"><div class="mini">'+esc(t.cat_path)+'</div><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:320px">'+esc(t.content||t.demand||'')+'</div></td>'+
+        '<td class="mono">'+maskPhone(cust?cust.phone:'')+'</td>'+
+        '<td>'+statusTag(t.status)+'</td>'+
+        '<td>'+tag(t.handler?'二线':'一线',t.handler?'blue':'gray')+'</td>'+
+        '<td>'+(t.handler?esc(t.handler):'<span class="mini">未分配</span>')+'</td>'+
+        '<td class="mini">'+esc(String(t.created_at).slice(0,16))+'</td></tr>';
+    }).join('')+'</tbody></table>';
+}
+function tkDot(action){
+  if(/完结/.test(action))return 'var(--green)';
+  if(/创建|建单/.test(action))return 'var(--brand)';
+  if(/催办|采纳|售后|视频/.test(action))return 'var(--orange)';
+  return '#94a3b8';
+}
+function openTkDrawer(id){
+  var t=S.tickets.find(function(x){return x.id===id;});if(!t)return;
+  var cust=S.customers.find(function(c){return c.id===t.customer_id;});
+  var evs=S.events.filter(function(e){return e.ticket_id===id;});
+  var d=$('tkDrawer');
+  d.querySelector('#tkdTitle').innerHTML='<b class="mono">'+esc(t.ticket_no)+'</b> '+statusTag(t.status)+(t.escalate?' <span class="tag tag-red">升级</span>':'');
+  d.querySelector('#tkdLeft').innerHTML=
+    '<div class="card"><h3>👤 基础信息</h3><div class="grid2">'+
+    kv('联系人',maskPhone(cust?cust.phone:''))+kv('客户',maskName(t.customer_name)+'（ID '+t.customer_id+'）')+
+    kv('货架',esc(t.shelf_code||'-')+' / ID '+esc(t.shelf_id||'-'))+kv('大区-地区',esc(t.region||'-'))+
+    kv('创建人',esc(t.creator||'-'))+kv('当前处理人',esc(t.handler||'未分配'))+
+    kv('催单次数',urgeCountOf(id)+' 次')+kv('来单渠道',esc(t.channel||'-'))+'</div></div>'+
+    '<div class="card"><h3>📄 工单内容</h3><div style="font-size:13.5px">'+esc(t.content||t.demand||'—')+'</div>'+(t.demand&&t.content?'<div class="mini" style="margin-top:6px">客户诉求：'+esc(t.demand)+'</div>':'')+'</div>'+
+    '<div id="tkdRel"></div>'+
+    '<div class="card"><h3>🕘 处理记录 · '+evs.length+'</h3><div class="tl">'+(evs.length?evs.map(function(e){return '<div class="tl-item"><div class="tl-hd" style="display:flex;gap:8px;align-items:center"><span style="width:9px;height:9px;border-radius:50%;background:'+tkDot(e.action)+'"></span>'+esc(e.action)+'</div><div class="tl-meta">'+esc(e.actor)+' · '+esc(String(e.created_at).slice(0,16))+'</div><div class="tl-bd">'+esc(e.detail||'')+'</div></div>';}).join(''):'<div class="mini">暂无记录</div>')+'</div></div>';
+  d.querySelector('#tkdRight').innerHTML=
+    '<div class="card"><h3>🛠 工单操作</h3><div style="display:flex;flex-direction:column;gap:6px">'+
+    (!t.handler?'<button class="btn btn-primary btn-sm" onclick="tkAct('+id+',\'claim\')">申领工单</button>':'')+
+    '<button class="btn btn-sm" onclick="tkAct('+id+',\'urge\')">催单</button>'+
+    (t.status==='待受理'?'<button class="btn btn-sm" onclick="tkAct('+id+',\'to2\')">转二线</button>':'')+
+    '<button class="btn btn-sm" onclick="tkAct('+id+',\'region\')">转地区接口人</button>'+
+    '<button class="btn btn-sm" onclick="tkBatch('+id+')">批次查询</button>'+
+    '<button class="btn btn-sm" onclick="tkJumpClaim('+id+')">跳理赔测算</button>'+
+    '<div class="fld" style="padding:4px 0 0"><label>分配给</label><div style="display:flex;gap:6px"><select id="tkAssign" style="flex:1"></select><button class="btn btn-sm" onclick="tkAct('+id+',\'assign\')">分配</button></div></div>'+
+    '</div></div>'+
+    '<div class="card"><h3>✍ 写跟进</h3><textarea id="tkFollow" rows="3" placeholder="填写跟进内容，提交后写入处理时间线" style="width:100%"></textarea><button class="btn btn-primary btn-sm" style="margin-top:6px;width:100%" onclick="tkFollowUp('+id+')">提交跟进</button></div>';
+  api('/api/handlers').then(function(hs){var s=d.querySelector('#tkAssign');if(s)s.innerHTML=hs.map(function(h){return '<option>'+esc(h)+'</option>';}).join('');}).catch(function(){});
+  // 关联工单蓝卡
+  var rel=d.querySelector('#tkdRel');rel.innerHTML='';
+  if(t.shelf_code)api('/api/related-tickets?shelf='+encodeURIComponent(t.shelf_code)+'&group='+encodeURIComponent(groupOfClient(t.cat_path))+'&exclude='+t.id).then(function(r){
+    if(!r.count)return;
+    rel.innerHTML='<div class="alert-blue" style="margin-bottom:10px"><b>存在 '+r.count+' 张疑似关联工单 · 同货柜同类问题（近30天）</b><div style="margin-top:6px">'+r.rows.map(function(x){return '<span class="chip" onclick="openTkDrawer('+x.id+')">'+esc(x.ticket_no)+'</span>';}).join('')+'</div></div>';
+  }).catch(function(){});
+  d.classList.add('open');
+}
+function closeTkDrawer(){$('tkDrawer').classList.remove('open');}
+async function tkAct(id,act){
+  var t=S.tickets.find(function(x){return x.id===id;});if(!t)return;
+  try{
+    if(act==='claim'){await patch('/api/tickets/'+id,{handler:S.me.name,status:t.status==='待受理'?'处理中':t.status});await post('/api/ticket_events',{ticket_id:id,actor:S.me.name,action:'申领',detail:S.me.name+' 申领工单进入处理'});}
+    if(act==='urge'){await post('/api/ticket_events',{ticket_id:id,actor:S.me.name,action:'催办 → '+(t.handler||'待分配'),detail:'工单管理页发起催办'});}
+    if(act==='to2'){await patch('/api/tickets/'+id,{status:'处理中'});await post('/api/ticket_events',{ticket_id:id,actor:S.me.name,action:'转二线',detail:'转二线队列处理'});}
+    if(act==='region'){await post('/api/ticket_events',{ticket_id:id,actor:S.me.name,action:'转地区接口人',detail:'转地区接口人协同处理'});}
+    if(act==='assign'){var who=$('tkAssign')?$('tkAssign').value:'';if(!who)return toast('请选择处理人');await patch('/api/tickets/'+id,{handler:who});await post('/api/ticket_events',{ticket_id:id,actor:S.me.name,action:'分配',detail:'分配给 '+who});}
+    await reloadTickets();renderTickets();openTkDrawer(id);toast('操作已完成并留痕');
+  }catch(e){toast('操作失败：'+e.message);}
+}
+async function tkFollowUp(id){
+  var txt=$('tkFollow').value.trim();if(!txt)return toast('请填写跟进内容');
+  await post('/api/ticket_events',{ticket_id:id,actor:S.me.name,action:'跟进',detail:txt});
+  await reloadTickets();openTkDrawer(id);toast('跟进已写入时间线');
+}
+async function tkBatch(id){
+  var t=S.tickets.find(function(x){return x.id===id;});if(!t||!t.shelf_code)return toast('该工单无货架编码');
+  var trs=S.trades.filter(function(x){return x.code===t.shelf_code;}).slice(0,5);
+  var dev=S.devices.find(function(x){return x.code===t.shelf_code;});
+  modal('<h3 style="margin-bottom:8px"> 批次查询 · 货架 '+esc(t.shelf_code)+'</h3>'+
+    '<div class="card" style="padding:10px"><h3>设备状态</h3>'+(dev?kv('在线',dev.online?'在线':'离线')+kv('7天断网',dev.offline_7d+' 次')+kv('30天断网',dev.offline_30d+' 次')+kv('维修任务',dev.repair_no||'无'):'<div class="mini">无设备记录</div>')+'</div>'+
+    '<div class="card" style="padding:10px"><h3>近期交易（批次流向参考）</h3>'+tbl(['订单号','金额','状态','开门时间'],trs.map(function(x){return [mono(x.order_no),'¥'+Number(x.amount).toFixed(2),esc(x.status),esc(x.open_time||'-')];}))+'</div>'+
+    '<div class="mini">说明：演示环境无独立批次表，以货架近期交易+设备状态作为批次查询等价数据</div>',640);
+}
+function tkJumpClaim(id){
+  closeTkDrawer();
+  switchView('second');
+  pickTicket(id);
+  toast('已跳转二线工作台，右栏查看理赔测算双锚定');
 }
 
 (function bootGuest(retries){
