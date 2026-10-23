@@ -311,6 +311,7 @@ iframe.calcframe{width:100%;height:calc(100vh - 52px);border:none;background:#ff
         </div>
         <div>
           <div class="card" style="padding:10px" id="closureCard"></div>
+          <div class="card" style="padding:10px" id="anchorCard"></div>
           <div class="card" id="custBrief"></div>
         </div>
       </div>
@@ -361,6 +362,32 @@ iframe.calcframe{width:100%;height:calc(100vh - 52px);border:none;background:#ff
       <iframe class="calcframe" src="/calculator.html" id="calcFrame"></iframe>
     </section>
 
+    <!-- ===== 视频复核 ===== -->
+    <section class="view" id="view-video">
+      <div class="topbar">
+        <h2><span class="logo-dot"></span>AI 智能客服工作台</h2><span class="slogan">— 解决客诉流程的信息断层和协同效率问题</span>
+        <span style="margin-left:auto;font-size:12.5px;color:var(--sub)">偷盗/扣费争议：前后订单交叉对比 + 复核结论落库</span>
+      </div>
+      <div style="padding:12px;display:grid;grid-template-columns:1fr 380px;gap:10px;align-items:start">
+        <div>
+          <div class="card" style="padding:12px">
+            <h3>🎬 订单视频复核</h3>
+            <div class="fld" style="padding:0 0 8px"><label>选择订单</label><select id="vrOrder" onchange="renderVideoReview()" style="width:100%"></select></div>
+            <div id="vrBody"></div>
+          </div>
+          <div class="card" style="padding:12px"><h3>复核记录</h3><div id="vrList"></div></div>
+        </div>
+        <div class="card" style="padding:12px">
+          <h3>✍ 复核结论</h3>
+          <div class="fld"><label>判定</label><select id="vrVerdict"><option>正常</option><option>异常</option><option>存疑</option></select></div>
+          <div class="fld"><label>争议商品/事项（点选）</label><div id="vrChips"></div></div>
+          <div class="fld"><label>备注</label><textarea id="vrNote" rows="3" placeholder="复核依据与处理意见"></textarea></div>
+          <button class="btn btn-primary btn-lg" style="width:100%;margin-top:8px" onclick="submitVideoReview()">提交复核结论（真实写入）</button>
+          <div class="mini" style="margin-top:6px">提交后更新复核记录列表；存疑件请同步创建督办任务</div>
+        </div>
+      </div>
+    </section>
+
     <!-- ===== 用户管理 ===== -->
     <section class="view" id="view-users">
       <div class="topbar">
@@ -403,8 +430,8 @@ const post=(p,b)=>api(p,{method:'POST',body:JSON.stringify(b||{})});
 const patch=(p,b)=>api(p,{method:'PATCH',body:JSON.stringify(b||{})});
 
 /* ===== 全局状态 ===== */
-var S={me:null,views:[],customers:[],cats:[],catTree:{},cur:null,tickets:[],events:[],closures:[],shelves:[],devices:[],contracts:[],settlements:[],trades:[],reps:[],wishes:[],supervisions:[],curTicket:null,qFilter:'全部',bizTab:'货架',bizTab2:'货架'};
-var VIEWS_META={front:'☎️ 一线工作台',second:'🧾 二线工单',manager:'📊 管理层',calc:'🧮 理赔计算器',users:'👥 用户管理',data:'🗂 数据浏览',ai:'🤖 AI 智能处理'};
+var S={me:null,views:[],customers:[],cats:[],catTree:{},cur:null,tickets:[],events:[],closures:[],shelves:[],devices:[],contracts:[],settlements:[],trades:[],reps:[],wishes:[],supervisions:[],reviews:[],calcs:[],curTicket:null,qFilter:'全部',bizTab:'货架',bizTab2:'货架'};
+var VIEWS_META={front:'☎️ 一线工作台',second:'🧾 二线工单',manager:'📊 管理层',calc:'🧮 理赔计算器',users:'👥 用户管理',data:'🗂 数据浏览',ai:'🤖 AI 智能处理',video:'📹 视频复核'};
 
 /* ===== 登录/导航 ===== */
 function showLogin(){$('login').classList.remove('hidden');$('app').classList.add('hidden');}
@@ -422,7 +449,7 @@ async function boot(){
   var cf=$('calcFrame'); if(cf) cf.src='/calculator.html?embed=1&user='+encodeURIComponent(S.me.name);
   renderRoleSwitch();
   var nav=$('nav');nav.innerHTML='';
-  var order=['ai','front','second','manager','calc','users','data'];
+  var order=['ai','front','second','video','manager','calc','users','data'];
   order.forEach(function(v){
     if(!S.views.includes(v))return;
     var d=document.createElement('div');d.className='nav-item';d.textContent=VIEWS_META[v];d.id='nav-'+v;
@@ -522,9 +549,9 @@ function aiDismiss(){var l=window._aiList||[];l.forEach(function(a){aiDismissed[
 
 /* ===== 数据加载 ===== */
 async function loadAll(){
-  const jobs=[api('/api/customers'),api('/api/categories'),api('/api/tickets'),api('/api/ticket_events'),api('/api/closures'),api('/api/shelves'),api('/api/devices'),api('/api/contracts'),api('/api/settlements'),api('/api/trades'),api('/api/replenishments'),api('/api/wishes'),api('/api/supervisions')];
+  const jobs=[api('/api/customers'),api('/api/categories'),api('/api/tickets'),api('/api/ticket_events'),api('/api/closures'),api('/api/shelves'),api('/api/devices'),api('/api/contracts'),api('/api/settlements'),api('/api/trades'),api('/api/replenishments'),api('/api/wishes'),api('/api/supervisions'),api('/api/video_reviews'),api('/api/claim_calcs')];
   const r=await Promise.all(jobs.map(function(j){return j.catch(function(){return [];});}));
-  S.customers=r[0];S.cats=r[1];S.tickets=r[2];S.events=r[3];S.closures=r[4];S.shelves=r[5];S.devices=r[6];S.contracts=r[7];S.settlements=r[8];S.trades=r[9];S.reps=r[10];S.wishes=r[11];S.supervisions=r[12];
+  S.customers=r[0];S.cats=r[1];S.tickets=r[2];S.events=r[3];S.closures=r[4];S.shelves=r[5];S.devices=r[6];S.contracts=r[7];S.settlements=r[8];S.trades=r[9];S.reps=r[10];S.wishes=r[11];S.supervisions=r[12];S.reviews=r[13]||[];S.calcs=r[14]||[];
   renderAiInit();
   buildCatTree();
   var regions=[...new Set(S.tickets.map(function(t){return t.region;}))].filter(Boolean);
@@ -533,6 +560,7 @@ async function loadAll(){
   if(S.views.includes('second')){renderQueue();renderClosureForm();renderCustBrief();renderBiz('bizTabs2','bizBody2','bizTab2');}
   if(S.views.includes('manager')){renderStats();renderMgrTable();renderSlaCheck();renderSupTable();}
   renderAiBar();
+  if(S.views.includes('video'))initVrPage();
 }
 
 /* ===== AI 智能处理视图 ===== */
@@ -682,6 +710,8 @@ async function aiCreateTicket(){
   var r=window._aiLast;if(!r)return;
   var btn=$('aiActTicket');if(btn.disabled)return;
   btn.disabled=true;btn.textContent='创建中…';
+  var dupOk=await dupModal(($('pfShelf')?$('pfShelf').value:''),($('pfCat')?$('pfCat').value:''),0);
+  if(!dupOk){btn.disabled=false;btn.textContent='✔ 人工确认 · 创建工单（真实写入）';return;}
   try{
     var no='GD'+new Date().toISOString().slice(0,10).replace(/-/g,'')+String(Math.floor(Math.random()*900+100));
     var catPath=$('pfCat')?$('pfCat').value:(r.sopMatch[0]&&r.sopMatch[0].name?catPathOf(r.classify.type):'');
@@ -1098,7 +1128,7 @@ function openTicketDetail(tid){
     (cl?'<div class="card" style="margin-bottom:10px"><h3>理赔闭环记录</h3>'+closureView(cl)+'</div>':'')+
     '<h3 style="font-size:13px;margin-bottom:6px">跟进记录时间线</h3>'+timelineOf(tid)+
     '<div style="margin-top:10px;text-align:right"><button class="btn btn-primary btn-sm" onclick="openUrge('+tid+')">⚡ 发起催办</button></div>';
-  modal(html,680);
+  var m=modal(html,680);injectRelated(m,t);
 }
 function openUrge(tid){
   var t=S.tickets.find(function(x){return x.id===tid;});
@@ -1187,6 +1217,7 @@ async function submitTicket(){
   var missing=[];
   FORM.forEach(function(g){g.fields.forEach(function(f){if(f.req&&(formVal[f.k]===''||formVal[f.k]==null))missing.push(f.l);});});
   if(missing.length){toast('还差 '+missing.length+' 项必填：'+missing.join('、'));updateFormProg();return;}
+  var dupOk=await dupModal(formVal.shelf_code,formVal.cat_path,0);if(!dupOk)return;
   var cat=S.cats.find(function(c){return c.path===formVal.cat_path;});
   var no='GD'+new Date().toISOString().slice(0,10).replace(/-/g,'')+String(Math.floor(Math.random()*900+100));
   var t=await post('/api/tickets',{ticket_no:no,customer_id:S.cur.id,customer_name:S.cur.name,region:S.cur.region,channel:formVal.channel||'自助创建',biz_type:formVal.biz_type,cat_path:formVal.cat_path,cat_code:cat?cat.code:'',shelf_id:formVal.shelf_id,shelf_code:formVal.shelf_code,risk:formVal.risk,urgency:formVal.urgency,escalate:formVal.escalate==='是'||formVal.escalate===true,role:formVal.role,demand:formVal.demand||'',content:formVal.content,visible_content:'',status:'待受理',handler:null,creator:S.me.name,sla_hours:formVal.urgency==='非常紧急'?2:(formVal.urgency==='紧急'?4:24)});
@@ -1287,7 +1318,7 @@ function pickTicket(id){
   var t=S.tickets.find(function(x){return x.id===id;});if(!t)return;
   S.curTicket=t;
   S.cur=S.customers.find(function(c){return c.id===t.customer_id;})||S.cur;
-  renderQueue();renderBiz('bizTabs2','bizBody2','bizTab2');renderClosureForm();renderCustBrief();
+  renderQueue();renderBiz('bizTabs2','bizBody2','bizTab2');renderClosureForm();renderCustBrief();renderAnchor();
   openWin();
 }
 /* 悬浮处理窗 */
@@ -1462,12 +1493,12 @@ function renderMgrTable(){
 function openMgrDetail(tid){
   var t=S.tickets.find(function(x){return x.id===tid;});if(!t)return;
   var cl=S.closures.find(function(c){return c.ticket_id===tid;});
-  modal('<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px"><b class="mono" style="font-size:15px">'+esc(t.ticket_no)+'</b>'+statusTag(t.status)+tag(t.risk,'red')+'<span class="tag tag-blue">管理层 · 只读</span></div>'+
+  var m=modal('<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px"><b class="mono" style="font-size:15px">'+esc(t.ticket_no)+'</b>'+statusTag(t.status)+tag(t.risk,'red')+'<span class="tag tag-blue">管理层 · 只读</span></div>'+
     '<div class="grid4" style="margin-bottom:10px">'+kv('工单分类',esc(t.cat_path))+kv('客户/大区',esc(t.customer_name)+' / '+esc(t.region))+kv('当前处理人',esc(t.handler||'待分配'))+kv('创建时间 / SLA',esc(t.created_at)+' / '+(t.sla_hours||24)+'h')+'</div>'+
     '<div class="alert-orange" style="margin-bottom:10px"><b>工单内容：</b>'+esc(t.content||t.demand||'—')+'</div>'+
     '<h3 style="font-size:13px;margin-bottom:6px">跟进闭环字段记录（二线提交）</h3>'+(cl?closureView(cl):'<div class="mini" style="padding:10px;border:1px dashed var(--line);border-radius:8px;text-align:center">暂无二线闭环记录</div>')+
     '<h3 style="font-size:13px;margin:10px 0 6px">处理时间线</h3>'+timelineOf(tid)+
-    '<div class="mini" style="margin-top:10px;text-align:center">处理与闭环录入请在二线工作台操作</div>',900);
+    '<div class="mini" style="margin-top:10px;text-align:center">处理与闭环录入请在二线工作台操作</div>',900);injectRelated(m,t);
 }
 
 /* ===== 用户管理 ===== */
@@ -1516,6 +1547,117 @@ async function renderDataBrowser(){
 
 /* ===== 启动 ===== */
 /* 启动：免登录直开。/api/me 失败（冷启动/网络抖动）自动重试，最终兜底以访客进入，不弹登录框 */
+/* ===== v4：问题组映射 / 建单防重 / 关联工单卡 / 理赔双锚定 / 视频复核 ===== */
+function groupOfClient(s){s=String(s||'');
+  if(/多扣|数量识别|重复扣费|扣费不及时|已扣费/.test(s))return '识别错误多扣';
+  if(/过期|发霉|变质|异物|破损|鼠害|临期/.test(s))return '效期质量';
+  if(/偷|盗|遮挡|非本人|不文明/.test(s))return '不文明购物';
+  if(/断网|离线|故障/.test(s))return '设备故障';
+  if(/补货|缺货/.test(s))return '补货缺货';
+  return '其他';}
+async function dupModal(shelf,catPath,exclude){
+  if(!shelf&&!catPath)return true;
+  var group=groupOfClient(catPath);
+  var r;
+  try{r=await api('/api/related-tickets?shelf='+encodeURIComponent(shelf||'')+'&group='+encodeURIComponent(group)+'&exclude='+exclude);}catch(e){return true;}
+  if(!r.count)return true;
+  return await new Promise(function(res){
+    var m=modal('<h3 style="margin-bottom:8px">⚠ 发现重复投诉 · 疑似柜机共性问题</h3>'+
+      '<div class="alert-orange" style="margin-bottom:8px">同货架 + 同问题组（'+esc(group)+'）+ 近 30 天已有 <b>'+r.count+'</b> 张工单，处理口径与赔付进度请保持一致</div>'+
+      r.rows.map(function(x){return '<div class="qcard" style="cursor:default"><div style="display:flex;justify-content:space-between"><b class="mono">'+esc(x.ticket_no)+'</b>'+statusTag(x.status)+'</div><div class="mini">'+esc(x.customer_name)+' · '+esc(x.cat_path)+' · '+esc(String(x.created_at).slice(0,16))+'</div><div class="mini">'+esc(x.content)+'</div></div>';}).join('')+
+      '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px"><button class="btn" id="dpCancel">取消，去跟进现有工单</button><button class="btn btn-primary" id="dpGo">情形不同，仍创建新单</button></div>',640);
+    m.querySelector('#dpCancel').onclick=function(){m.remove();openTicketDetail(r.rows[0].id);res(false);};
+    m.querySelector('#dpGo').onclick=function(){m.remove();res(true);};
+  });
+}
+function injectRelated(m,t){
+  if(!m||!t||!t.shelf_code)return;
+  var bd=m.querySelector('.mbd');if(!bd)return;
+  var ph=document.createElement('div');ph.innerHTML='<div class="mini" style="padding:4px 0">正在检查同柜关联工单…</div>';
+  bd.insertBefore(ph,bd.firstChild);
+  api('/api/related-tickets?shelf='+encodeURIComponent(t.shelf_code)+'&group='+encodeURIComponent(groupOfClient(t.cat_path))+'&exclude='+t.id).then(function(r){
+    if(!r.count){ph.innerHTML='';return;}
+    ph.innerHTML='<div class="alert-blue" style="margin-bottom:10px"><b>存在 '+r.count+' 张疑似关联工单 · 同货柜同类问题（近30天）</b>，处理口径/赔付进度请保持一致<div style="margin-top:6px">'+r.rows.map(function(x){return '<span class="chip" onclick="openRelPop('+x.id+')">'+esc(x.ticket_no)+'</span>';}).join('')+'</div></div>';
+    window._relRows=r.rows;
+  }).catch(function(){ph.innerHTML='';});
+}
+function openRelPop(id){
+  var x=(window._relRows||[]).find(function(r){return r.id===id;});if(!x)return;
+  modal('<h3 style="margin-bottom:8px">关联工单 '+esc(x.ticket_no)+'</h3>'+
+    '<div class="grid2">'+kv('货架编码',esc(x.shelf_code))+kv('创建时间',esc(String(x.created_at).slice(0,16)))+kv('客户',esc(x.customer_name))+kv('工单分类',esc(x.cat_path))+kv('状态',esc(x.status))+'</div>'+
+    '<div class="alert-orange" style="margin:8px 0"><b>工单全文：</b>'+esc(x.content)+'</div>'+
+    '<div style="text-align:right"><button class="btn btn-primary btn-sm" onclick="this.closest(\'.mask\').remove();openTicketDetail('+x.id+')">打开该工单</button></div>',560);
+}
+async function renderAnchor(){
+  var el=$('anchorCard');if(!el)return;
+  var t=S.curTicket;
+  if(!t){el.innerHTML='<h3>⚖ 理赔测算（规则×数据双锚定）</h3><div class="mini" style="padding:10px 0;text-align:center">先点选左侧工单</div>';return;}
+  var group=groupOfClient(t.cat_path+' '+(t.content||''));
+  var a;try{a=await api('/api/ai/anchor?group='+encodeURIComponent(group));}catch(e){el.innerHTML='<h3>⚖ 理赔测算</h3><div class="mini">'+esc(e.message)+'</div>';return;}
+  var lo=a.p50||0,hi=a.p75||0;
+  el.innerHTML='<h3>⚖ 理赔测算 · '+esc(group)+'</h3>'+
+    '<div class="kv"><span>规则侧（SOP 阈值）</span><b style="font-size:12px">'+esc(a.rule)+'</b></div>'+
+    '<div class="kv"><span>数据侧（历史闭环）</span><b>P50 ¥'+Number(a.p50).toFixed(0)+' · P75 ¥'+Number(a.p75).toFixed(0)+' · P90 ¥'+Number(a.p90).toFixed(0)+'</b></div>'+
+    '<div class="kv"><span>样本量</span><b>'+a.n+' 条'+(a.n?'':'（不足，仅规则锚定）')+'</b></div>'+
+    '<div class="alert-blue" style="margin:6px 0">建议区间 <b>¥'+lo.toFixed(0)+' ~ ¥'+(hi||lo).toFixed(0)+'</b>；第1轮起谈 ¥'+lo.toFixed(0)+'，第3轮建议成交 ¥'+(hi||lo).toFixed(0)+'</div>'+
+    '<div style="display:flex;gap:6px"><button class="btn btn-primary btn-sm" onclick="saveCalc(false)">保存测算</button><button class="btn btn-sm" onclick="saveCalc(true)">采纳并写入跟进</button></div>'+
+    '<div id="calcList" style="margin-top:8px"></div>';
+  renderCalcList();
+}
+async function saveCalc(adopt){
+  var t=S.curTicket;if(!t)return;
+  var group=groupOfClient(t.cat_path+' '+(t.content||''));
+  var a=await api('/api/ai/anchor?group='+encodeURIComponent(group));
+  var body={ticket_id:t.id,ticket_no:t.ticket_no,scenario:group,inputs_json:JSON.stringify({demand:t.demand||'',urgency:t.urgency}),result_json:JSON.stringify({p50:a.p50,p75:a.p75,rule:a.rule}),adopted:false,created_by:S.me.name};
+  var r=await post('/api/claim_calcs',body);
+  if(adopt){await patch('/api/claim_calcs/'+r.id,{adopted:true});await post('/api/ticket_events',{ticket_id:t.id,actor:S.me.name,action:'采纳理赔测算',detail:'采纳双锚定测算：建议区间 ¥'+a.p50+'~¥'+a.p75+'（规则：'+a.rule+'）'});}
+  S.calcs=await api('/api/claim_calcs');renderCalcList();toast(adopt?'测算已采纳并写入工单跟进':'测算已保存');
+}
+function renderCalcList(){
+  var el=$('calcList');if(!el)return;
+  var t=S.curTicket;var list=S.calcs.filter(function(x){return t&&x.ticket_id===t.id;});
+  el.innerHTML=list.length?list.map(function(x){return '<div style="display:flex;gap:6px;align-items:center;padding:4px 0;border-top:1px dashed var(--line);font-size:12px"><span class="mono">#'+x.id+'</span> '+esc(x.scenario)+(x.adopted?' <span class="tag tag-green">已采纳</span>':'')+'<span style="margin-left:auto">'+(x.adopted?'<span class="mini">禁删</span>':'<span class="link" style="color:var(--red)" onclick="delCalc('+x.id+')">删除</span>')+'</span></div>';}).join(''):'<div class="mini">暂无测算记录</div>';
+}
+async function delCalc(id){
+  var x=S.calcs.find(function(v){return v.id===id;});
+  if(x&&x.adopted){toast('已采纳的测算禁止删除');return;}
+  await api('/api/claim_calcs/'+id,{method:'DELETE'});S.calcs=await api('/api/claim_calcs');renderCalcList();toast('已删除');
+}
+var vrDisputed=[];
+function initVrPage(){
+  var sel=$('vrOrder');if(!sel)return;
+  sel.innerHTML=S.trades.map(function(t){return '<option value="'+t.order_no+'">'+esc(t.order_no)+' · '+esc(t.code)+' · ¥'+Number(t.amount).toFixed(2)+' · '+esc(t.status)+'</option>';}).join('');
+  renderVideoReview();
+  var list=$('vrList');
+  if(list)list.innerHTML=tbl(['订单号','货架','复核人','判定','争议事项','时间'],S.reviews.map(function(v){return [mono(v.order_no),mono(v.shelf_code),esc(v.reviewer),tag(v.verdict,v.verdict==='正常'?'green':v.verdict==='异常'?'red':'orange'),esc(v.disputed_items),esc(String(v.created_at).slice(0,16))];}));
+}
+function renderVideoReview(){
+  var no=$('vrOrder').value;var t=S.trades.find(function(x){return x.order_no===no;});
+  var el=$('vrBody');if(!el||!t){if(el)el.innerHTML='<div class="mini">暂无订单</div>';return;}
+  var same=S.trades.filter(function(x){return x.code===t.code;}).sort(function(a,b){return a.id-b.id;});
+  var i=same.findIndex(function(x){return x.order_no===no;});
+  var prev=same[i-1],next=same[i+1];
+  var cross=function(o,label){return o?'<div style="flex:1;border:1px solid var(--line);border-radius:6px;padding:6px 8px"><div class="mini"><b>'+label+'</b> '+mono(o.order_no)+'</div><div class="mini">¥'+Number(o.amount).toFixed(2)+' · '+esc(o.status)+' · 退款'+(o.refunds||0)+'笔 · '+esc(o.open_time||'-')+'</div></div>':'<div style="flex:1;border:1px dashed var(--line);border-radius:6px;padding:6px 8px" class="mini">'+label+'：无</div>';};
+  el.innerHTML='<div class="grid2" style="margin-bottom:8px">'+kv('订单号',mono(t.order_no))+kv('货架',mono(t.code))+kv('金额','¥'+Number(t.amount).toFixed(2))+kv('开门时间',esc(t.open_time||'-'))+kv('状态',esc(t.status))+kv('退款记录',(t.refunds||0)+' 笔')+'</div>'+
+    '<div style="display:flex;gap:8px;margin-bottom:8px">'+cross(prev,'前一笔订单')+cross(next,'后一笔订单')+'</div>'+
+    '<div class="mini" style="margin-bottom:4px">交叉对比：核对前后订单取货与扫码差异，定位争议商品</div>'+
+    renderVideoTimeline({open:'0:02',suspect:'0:15',suspectNote:'取货动作与扫码记录时间差异常（AI 预标记，人工确认）',close:'0:29'},{no:t.order_no,open_time:t.open_time});
+  vrDisputed=[];
+  var chips=['未扫码拿取','数量不符','商品错拿','门未关好','视频丢帧','遮挡摄像头'];
+  $('vrChips').innerHTML=chips.map(function(s){return '<span class="chip" onclick="this.classList.toggle(\'on\');vrToggleItem(\''+s+'\')">'+s+'</span>';}).join('');
+}
+function vrToggleItem(s){var i=vrDisputed.indexOf(s);if(i>=0)vrDisputed.splice(i,1);else vrDisputed.push(s);}
+async function submitVideoReview(){
+  var no=$('vrOrder').value;var t=S.trades.find(function(x){return x.order_no===no;});
+  if(!t){toast('请先选择订单');return;}
+  var verdict=$('vrVerdict').value;
+  if(verdict==='异常'&&!vrDisputed.length){toast('判定为异常时请勾选争议事项');return;}
+  await post('/api/video_reviews',{order_no:t.order_no,shelf_code:t.code,reviewer:S.me.name,verdict:verdict,disputed_items:vrDisputed.join('/'),note:$('vrNote').value||''});
+  S.reviews=await api('/api/video_reviews');
+  toast('复核结论已提交（'+verdict+'）');$('vrNote').value='';
+  initVrPage();
+}
+
 (function bootGuest(retries){
   api('/api/me').then(boot).catch(function(err){
     if(retries>0){setTimeout(function(){bootGuest(retries-1);},1200);return;}

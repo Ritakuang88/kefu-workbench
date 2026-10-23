@@ -30,10 +30,14 @@ const TABLES = [
   { name: 'wishes', views: ['front', 'second'], columns: ['id', 'customer_id', 'code', 'product', 'brand', 'fe_code', 'in_list', 'supply_status', 'report_count', 'reporter', 'reporter_phone', 'wish_type', 'qty', 'period', 'created_at'], order: 'id.desc' },
   // —— AI 督办任务（人工确认后真实落库） ——
   { name: 'supervisions', views: ['front', 'second', 'manager'], columns: ['id', 'ticket_no', 'customer_id', 'customer_name', 'reason', 'dept', 'status', 'next_check', 'ops_log', 'created_at'], order: 'id.desc' },
+  // —— 理赔测算记录（保存/采纳→写入工单跟进；已采纳禁删） ——
+  { name: 'claim_calcs', views: ['front', 'second', 'manager'], columns: ['id', 'ticket_id', 'ticket_no', 'scenario', 'inputs_json', 'result_json', 'adopted', 'created_by', 'created_at'], order: 'id.desc' },
+  // —— 视频复核记录（正常/异常/存疑 + 争议商品 + 备注） ——
+  { name: 'video_reviews', views: ['front', 'second', 'manager'], columns: ['id', 'order_no', 'shelf_code', 'reviewer', 'verdict', 'disputed_items', 'note', 'created_at'], order: 'id.desc' },
 ];
 
 // 视图：front=一线工作台 second=二线工作台 manager=管理层 calc=理赔计算器(静态)
-const ALL_VIEWS = ['front', 'second', 'manager', 'calc', 'ai'];
+const ALL_VIEWS = ['front', 'second', 'manager', 'calc', 'ai', 'video'];
 // API 前缀 → 需要的视图（数组=任一视图命中即可访问）
 const VIEW_API_PREFIX = {};
 TABLES.forEach(t => { VIEW_API_PREFIX[t.name] = t.views; });
@@ -42,11 +46,11 @@ TABLES.forEach(t => { VIEW_API_PREFIX[t.name] = t.views; });
 const ADMIN_ONLY_PATHS = ['/api/users', '/api/admin'];
 // 角色 → 默认视图；member 可被 admin 追加授权的视图
 const DEFAULT_VIEWS_BY_ROLE = {
-  agent: ['front', 'ai', 'calc'],      // 一线客服
-  handler: ['second', 'ai', 'calc'],   // 二线工单
-  member: ['front', 'ai', 'calc'],     // 兼容默认注册角色
+  agent: ['front', 'ai', 'calc', 'video'],      // 一线客服
+  handler: ['second', 'ai', 'calc', 'video'],   // 二线工单
+  member: ['front', 'ai', 'calc', 'video'],     // 兼容默认注册角色
 };
-const GRANTABLE_VIEWS = ['front', 'second', 'calc', 'manager', 'ai'];
+const GRANTABLE_VIEWS = ['front', 'second', 'calc', 'manager', 'ai', 'video'];
 const VALID_ROLES = ['admin', 'agent', 'handler', 'member'];
 
 /* ============ 以下勿动 ============ */
@@ -446,6 +450,37 @@ const server = http.createServer(async (req, res) => {
       }
 
 
+      // ---- 关联工单查询（建单防重 / 详情关联提示的数据底座）----
+      const groupOf = s => { s = String(s || '');
+        if (/多扣|数量识别|重复扣费|扣费不及时|已扣费/.test(s)) return '识别错误多扣';
+        if (/过期|发霉|变质|异物|破损|鼠害|临期/.test(s)) return '效期质量';
+        if (/偷|盗|遮挡|非本人|不文明/.test(s)) return '不文明购物';
+        if (/断网|离线|故障/.test(s)) return '设备故障';
+        if (/补货|缺货/.test(s)) return '补货缺货';
+        return '其他'; };
+      if (p === '/api/related-tickets' && req.method === 'GET') {
+        const shelf = String(u.searchParams.get('shelf') || '');
+        const group = String(u.searchParams.get('group') || '');
+        const exclude = Number(u.searchParams.get('exclude') || 0);
+        const days = Number(u.searchParams.get('days') || 30);
+        const since = new Date(Date.now() - days * 864e5).toISOString();
+        let rows = await sb('GET', 'tickets', { select: '*', order: 'created_at.desc', limit: 300 }).catch(() => []);
+        rows = rows.filter(t => t.id !== exclude && String(t.created_at) >= since);
+        if (shelf) rows = rows.filter(t => String(t.shelf_code || '') === shelf);
+        if (group) rows = rows.filter(t => groupOf(String(t.cat_path || '') + ' ' + String(t.content || '')) === group);
+        return ok(res, { count: rows.length, group, rows: rows.slice(0, 8).map(t => ({ id: t.id, ticket_no: t.ticket_no, customer_name: t.customer_name, cat_path: t.cat_path, content: String(t.content || '').slice(0, 80), shelf_code: t.shelf_code, status: t.status, created_at: t.created_at })) });
+      }
+      // ---- 理赔双锚定：规则侧(SOP阈值) × 数据侧(历史闭环分位数) ----
+      if (p === '/api/ai/anchor' && req.method === 'GET') {
+        const group = String(u.searchParams.get('group') || '效期质量');
+        const cls = await sb('GET', 'closures', { select: '*', limit: 300 }).catch(() => []);
+        const tks = await sb('GET', 'tickets', { select: 'id,cat_path,content', limit: 500 }).catch(() => []);
+        const gById = {}; tks.forEach(t => { gById[t.id] = groupOf(String(t.cat_path || '') + ' ' + String(t.content || '')); });
+        const totals = cls.filter(cc => gById[cc.ticket_id] === group).map(cc => Number(cc.refund_amount || 0) + Number(cc.pay_amount || 0)).sort((a, b) => a - b);
+        const pct = q => totals.length ? totals[Math.min(totals.length - 1, Math.floor(q * totals.length))] : 0;
+        const ruleMap = { '效期质量': '<200元二线可直接退；≥200元转组长/总部；未食用谈退1赔3、已食用谈退1赔10', '识别错误多扣': '48小时原路退差价；≤50元二线、>50元地区经理、≥200元组长', '不文明购物': '≤50元婉拒1次可退；>50元地区运营经理48小时内回复；原则不退款核实后追损', '设备故障': '无赔付；维修/换架走审批', '补货缺货': '无赔付；加急补货需运营主管', '其他': '无凭证不予理赔' };
+        return ok(res, { group, n: totals.length, p50: pct(0.5), p75: pct(0.75), p90: pct(0.9), rule: ruleMap[group] || ruleMap['其他'], note: totals.length ? '数据侧取历史同类闭环赔付分位数（样本 ' + totals.length + ' 条）' : '数据侧样本不足，仅规则侧锚定' });
+      }
       // ---- 泛型业务 CRUD（按 TABLES 白名单自动路由） ----
       for (const t of TABLES) {
         if (p === '/api/' + t.name || p.startsWith('/api/' + t.name + '/')) {
